@@ -1,6 +1,7 @@
 package com.emerbv.ecommdb.dto;
 
 import com.emerbv.ecommdb.model.Category;
+import com.emerbv.ecommdb.model.Variant;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -15,5 +16,6 @@ public class ProductDto {
     private int inventory;
     private String description;
     private Category category;
+    private List<Variant> variants;
     private List<ImageDto> images;
 }
