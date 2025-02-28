@@ -5,8 +5,10 @@ import com.emerbv.ecommdb.exceptions.ResourceNotFoundException;
 import com.emerbv.ecommdb.model.Product;
 import com.emerbv.ecommdb.model.Variant;
 import com.emerbv.ecommdb.repository.VariantRepository;
+import com.emerbv.ecommdb.request.VariantUpdateRequest;
 import com.emerbv.ecommdb.service.product.IProductService;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -17,6 +19,7 @@ import java.util.List;
 public class VariantService implements IVariantService {
     private  final VariantRepository variantRepository;
     private  final IProductService productService;
+    private final ModelMapper modelMapper;
 
     @Override
     public Variant getVariantById(Long id) {
@@ -58,11 +61,17 @@ public class VariantService implements IVariantService {
     }
 
     @Override
-    public void updateVariant(VariantDto variantDto, Long variantId) {
-        Variant theVariant = getVariantById(variantId);
+    public Variant updateVariant(VariantUpdateRequest request, Long variantId) {
+        return  variantRepository.findById(variantId).map(existingVariant -> {
+            existingVariant.setName(request.getName());
+            existingVariant.setPrice(request.getPrice());
+            existingVariant.setInventory(request.getInventory());
+            return variantRepository.save(existingVariant);
+        }).orElseThrow(() -> new ResourceNotFoundException("Variant not found!"));
+    }
 
-        theVariant.setName(variantDto.getName());
-        theVariant.setPrice(variantDto.getPrice());
-        theVariant.setInventory(variantDto.getInventory());
+    @Override
+    public VariantDto convertVariantToDto(Variant variant) {
+        return modelMapper.map(variant, VariantDto.class);
     }
 }
