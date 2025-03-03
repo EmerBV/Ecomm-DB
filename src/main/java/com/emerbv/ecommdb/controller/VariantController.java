@@ -1,24 +1,15 @@
 package com.emerbv.ecommdb.controller;
 
-import com.emerbv.ecommdb.dto.UserDto;
 import com.emerbv.ecommdb.dto.VariantDto;
 import com.emerbv.ecommdb.exceptions.ResourceNotFoundException;
-import com.emerbv.ecommdb.model.Image;
-import com.emerbv.ecommdb.model.User;
 import com.emerbv.ecommdb.model.Variant;
-import com.emerbv.ecommdb.request.UserUpdateRequest;
 import com.emerbv.ecommdb.request.VariantUpdateRequest;
 import com.emerbv.ecommdb.response.ApiResponse;
 import com.emerbv.ecommdb.service.variant.IVariantService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.sql.SQLException;
 import java.util.List;
 
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;

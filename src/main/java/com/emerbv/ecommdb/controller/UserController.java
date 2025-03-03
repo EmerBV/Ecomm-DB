@@ -43,6 +43,17 @@ public class UserController {
         }
     }
 
+    @PostMapping("/admin/add")
+    public ResponseEntity<ApiResponse> createAdminUser(@RequestBody CreateUserRequest request) {
+        try {
+            User user = userService.createAdminUser(request);
+            UserDto userDto = userService.convertUserToDto(user);
+            return ResponseEntity.ok(new ApiResponse("Create Admin User Success!", userDto));
+        } catch (AlreadyExistsException e) {
+            return ResponseEntity.status(CONFLICT).body(new ApiResponse(e.getMessage(), null));
+        }
+    }
+
     @PutMapping("/{userId}/update")
     public ResponseEntity<ApiResponse> updateUser(@RequestBody UserUpdateRequest request, @PathVariable Long userId) {
         try {

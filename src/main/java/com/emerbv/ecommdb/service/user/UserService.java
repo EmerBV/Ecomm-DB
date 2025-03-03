@@ -1,8 +1,10 @@
 package com.emerbv.ecommdb.service.user;
 
+import com.emerbv.ecommdb.data.RoleRepository;
 import com.emerbv.ecommdb.dto.UserDto;
 import com.emerbv.ecommdb.exceptions.AlreadyExistsException;
 import com.emerbv.ecommdb.exceptions.ResourceNotFoundException;
+import com.emerbv.ecommdb.model.Role;
 import com.emerbv.ecommdb.model.User;
 import com.emerbv.ecommdb.repository.UserRepository;
 import com.emerbv.ecommdb.request.CreateUserRequest;
@@ -15,11 +17,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class UserService implements IUserService {
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final ModelMapper modelMapper;
     private final PasswordEncoder passwordEncoder;
 
@@ -31,6 +35,7 @@ public class UserService implements IUserService {
 
     @Override
     public User createUser(CreateUserRequest request) {
+        Role userRole = roleRepository.findByName("ROLE_USER").get();
         return  Optional.of(request)
                 .filter(user -> !userRepository.existsByEmail(request.getEmail()))
                 .map(req -> {
@@ -39,6 +44,23 @@ public class UserService implements IUserService {
                     user.setPassword(passwordEncoder.encode(request.getPassword()));
                     user.setFirstName(request.getFirstName());
                     user.setLastName(request.getLastName());
+                    user.setRoles(Set.of(userRole));
+                    return  userRepository.save(user);
+                }) .orElseThrow(() -> new AlreadyExistsException("Oops!" + request.getEmail() + "already exists!"));
+    }
+
+    @Override
+    public User createAdminUser(CreateUserRequest request) {
+        Role userRole = roleRepository.findByName("ROLE_ADMIN").get();
+        return  Optional.of(request)
+                .filter(user -> !userRepository.existsByEmail(request.getEmail()))
+                .map(req -> {
+                    User user = new User();
+                    user.setEmail(request.getEmail());
+                    user.setPassword(passwordEncoder.encode(request.getPassword()));
+                    user.setFirstName(request.getFirstName());
+                    user.setLastName(request.getLastName());
+                    user.setRoles(Set.of(userRole));
                     return  userRepository.save(user);
                 }) .orElseThrow(() -> new AlreadyExistsException("Oops!" + request.getEmail() + "already exists!"));
     }
