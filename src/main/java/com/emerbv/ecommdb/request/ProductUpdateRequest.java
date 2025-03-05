@@ -1,5 +1,6 @@
 package com.emerbv.ecommdb.request;
 
+import com.emerbv.ecommdb.enums.ProductStatus;
 import com.emerbv.ecommdb.model.Category;
 import lombok.Data;
 
@@ -14,4 +15,6 @@ public class ProductUpdateRequest {
     private int inventory;
     private String description;
     private Category category;
+    private int discountPercentage;
+    private ProductStatus status;
 }

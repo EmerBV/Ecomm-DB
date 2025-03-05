@@ -2,6 +2,7 @@ package com.emerbv.ecommdb.service.product;
 
 import com.emerbv.ecommdb.dto.ImageDto;
 import com.emerbv.ecommdb.dto.ProductDto;
+import com.emerbv.ecommdb.enums.ProductStatus;
 import com.emerbv.ecommdb.exceptions.AlreadyExistsException;
 import com.emerbv.ecommdb.exceptions.ProductNotFoundException;
 import com.emerbv.ecommdb.exceptions.ResourceNotFoundException;
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -53,13 +55,21 @@ public class ProductService implements IProductService  {
     }
 
     public Product createProduct(AddProductRequest request, Category category) {
+        // Validación para evitar descuentos negativos
+        int discount = Math.max(request.getDiscountPercentage(), 0);
+        ProductStatus status = request.getStatus() != null ? request.getStatus() : ProductStatus.IN_STOCK;
+
         return new Product(
                 request.getName(),
                 request.getBrand(),
                 request.getPrice(),
                 request.getInventory(),
                 request.getDescription(),
-                category
+                category,
+                discount,
+                status,
+                0,
+                0
         );
     }
 
@@ -111,6 +121,15 @@ public class ProductService implements IProductService  {
         existingProduct.setPrice(request.getPrice());
         existingProduct.setInventory(request.getInventory());
         existingProduct.setDescription(request.getDescription());
+
+        // Validar descuento: evitar negativos
+        int discount = Math.max(request.getDiscountPercentage(), 0);
+        existingProduct.setDiscountPercentage(discount);
+
+        // Si el admin quiere cambiar el estado del producto (ejemplo: de "PRE_ORDER" a "IN_STOCK")
+        if (request.getStatus() != null) {
+            existingProduct.setStatus(request.getStatus());
+        }
 
         Category category = categoryRepository.findByName(request.getCategory().getName());
         existingProduct.setCategory(category);

@@ -5,6 +5,7 @@ import com.emerbv.ecommdb.model.Variant;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -16,6 +17,11 @@ public class ProductDto {
     private int inventory;
     private String description;
     private Category category;
+    private int discountPercentage;
+    private String status;
+    private int salesCount;
+    private int wishCount;
+    private LocalDateTime createdAt;
     private List<Variant> variants;
     private List<ImageDto> images;
 }
