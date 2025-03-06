@@ -1,5 +1,6 @@
 package com.emerbv.ecommdb.dto;
 
+import com.emerbv.ecommdb.model.ShippingDetails;
 import lombok.Data;
 
 import java.util.List;
@@ -10,6 +11,7 @@ public class UserDto {
     private String firstName;
     private String lastName;
     private String email;
-    private List<OrderDto> orders;
+    private ShippingDetails shippingDetails;
     private CartDto cart;
+    private List<OrderDto> orders;
 }
