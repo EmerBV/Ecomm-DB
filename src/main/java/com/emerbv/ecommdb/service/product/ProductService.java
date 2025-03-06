@@ -157,16 +157,6 @@ public class ProductService implements IProductService  {
     }
 
     @Override
-    public List<Product> getProductsByPrice(Double price) {
-        return List.of();
-    }
-
-    @Override
-    public List<Product> getProductsByPriceRange(Double minPrice, Double maxPrice) {
-        return List.of();
-    }
-
-    @Override
     public List<Product> getProductsByName(String name) {
         return productRepository.findByName(name);
     }
@@ -196,5 +186,47 @@ public class ProductService implements IProductService  {
         productDto.setImages(imageDtos);
         return productDto;
     }
+
+    @Override
+    public List<Product> getProductsByStatus(ProductStatus status) {
+        return productRepository.findByStatus(status);
+    }
+
+    @Override
+    public List<Product> getProductsBySalesCount() {
+        return productRepository.findTop10ByOrderBySalesCountDesc();
+    }
+
+    @Override
+    public List<Product> getProductsByWishCount() {
+        return productRepository.findTop10ByOrderByWishCountDesc();
+    }
+
+    @Override
+    public List<Product> getRecentProducts() {
+        LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
+        return productRepository.findByCreatedAtAfter(sevenDaysAgo);
+
+        // También se puede hacer de esta manera
+        /*
+        LocalDateTime sevenDaysAgo = LocalDateTime.now().minusDays(7);
+        List<Product> recentProducts = productRepository.findByCreatedAtAfter(sevenDaysAgo);
+        return recentProducts;
+         */
+    }
+
+    /*
+    @Override
+    public List<Product> getProductsByPrice(Double price) {
+        return List.of();
+    }
+
+    @Override
+    public List<Product> getProductsByPriceRange(Double minPrice, Double maxPrice) {
+        return List.of();
+    }
+     */
+
+
 
 }

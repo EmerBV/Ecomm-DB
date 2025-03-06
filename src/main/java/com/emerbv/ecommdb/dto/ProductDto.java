@@ -1,5 +1,6 @@
 package com.emerbv.ecommdb.dto;
 
+import com.emerbv.ecommdb.enums.ProductStatus;
 import com.emerbv.ecommdb.model.Category;
 import com.emerbv.ecommdb.model.Variant;
 import lombok.Data;
@@ -18,7 +19,7 @@ public class ProductDto {
     private String description;
     private Category category;
     private int discountPercentage;
-    private String status;
+    private ProductStatus status;
     private int salesCount;
     private int wishCount;
     private LocalDateTime createdAt;

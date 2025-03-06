@@ -1,6 +1,7 @@
 package com.emerbv.ecommdb.controller;
 
 import com.emerbv.ecommdb.dto.ProductDto;
+import com.emerbv.ecommdb.enums.ProductStatus;
 import com.emerbv.ecommdb.exceptions.AlreadyExistsException;
 import com.emerbv.ecommdb.exceptions.ResourceNotFoundException;
 import com.emerbv.ecommdb.model.Product;
@@ -137,6 +138,62 @@ public class ProductController {
     public ResponseEntity<ApiResponse> findProductsByCategory(@PathVariable String category) {
         try {
             List<Product> products = productService.getProductsByCategory(category);
+            if (products.isEmpty()) {
+                return ResponseEntity.status(NOT_FOUND).body(new ApiResponse("No products found ", null));
+            }
+            List<ProductDto> convertedProducts = productService.getConvertedProducts(products);
+            return  ResponseEntity.ok(new ApiResponse("success", convertedProducts));
+        } catch (Exception e) {
+            return ResponseEntity.ok(new ApiResponse(e.getMessage(), null));
+        }
+    }
+
+    @GetMapping("/product/{status}/products")
+    public ResponseEntity<ApiResponse> findProductsByStatus(@PathVariable ProductStatus status) {
+        try {
+            List<Product> products = productService.getProductsByStatus(status);
+            if (products.isEmpty()) {
+                return ResponseEntity.status(NOT_FOUND).body(new ApiResponse("No products found ", null));
+            }
+            List<ProductDto> convertedProducts = productService.getConvertedProducts(products);
+            return  ResponseEntity.ok(new ApiResponse("success", convertedProducts));
+        } catch (Exception e) {
+            return ResponseEntity.ok(new ApiResponse(e.getMessage(), null));
+        }
+    }
+
+    @GetMapping("/product/best-sellers/products")
+    public ResponseEntity<ApiResponse> findProductsBySalesCount() {
+        try {
+            List<Product> products = productService.getProductsBySalesCount();
+            if (products.isEmpty()) {
+                return ResponseEntity.status(NOT_FOUND).body(new ApiResponse("No products found ", null));
+            }
+            List<ProductDto> convertedProducts = productService.getConvertedProducts(products);
+            return  ResponseEntity.ok(new ApiResponse("success", convertedProducts));
+        } catch (Exception e) {
+            return ResponseEntity.ok(new ApiResponse(e.getMessage(), null));
+        }
+    }
+
+    @GetMapping("/product/most-desired/products")
+    public ResponseEntity<ApiResponse> findProductsByWishCount() {
+        try {
+            List<Product> products = productService.getProductsByWishCount();
+            if (products.isEmpty()) {
+                return ResponseEntity.status(NOT_FOUND).body(new ApiResponse("No products found ", null));
+            }
+            List<ProductDto> convertedProducts = productService.getConvertedProducts(products);
+            return  ResponseEntity.ok(new ApiResponse("success", convertedProducts));
+        } catch (Exception e) {
+            return ResponseEntity.ok(new ApiResponse(e.getMessage(), null));
+        }
+    }
+
+    @GetMapping("/product/recent/products")
+    public ResponseEntity<ApiResponse> findRecentProducts() {
+        try {
+            List<Product> products = productService.getRecentProducts();
             if (products.isEmpty()) {
                 return ResponseEntity.status(NOT_FOUND).body(new ApiResponse("No products found ", null));
             }
