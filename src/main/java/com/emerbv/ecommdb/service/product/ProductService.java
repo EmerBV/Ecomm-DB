@@ -47,6 +47,7 @@ public class ProductService implements IProductService  {
                     return categoryRepository.save(newCategory);
                 });
         request.setCategory(category);
+
         return productRepository.save(createProduct(request, category));
     }
 
@@ -59,7 +60,7 @@ public class ProductService implements IProductService  {
         int discount = Math.max(request.getDiscountPercentage(), 0);
         ProductStatus status = request.getStatus() != null ? request.getStatus() : ProductStatus.IN_STOCK;
 
-        return new Product(
+        Product product = new Product(
                 request.getName(),
                 request.getBrand(),
                 request.getPrice(),
@@ -71,6 +72,15 @@ public class ProductService implements IProductService  {
                 0,
                 0
         );
+
+        // Ajustar el precio y el inventario basados en las variantes
+        product.setPrice(product.getEffectivePrice());
+        product.setInventory(product.getTotalInventory());
+
+        // Actualizar automáticamente el estado del producto según el stock
+        product.updateProductStatus();
+
+        return  product;
     }
 
     @Override
@@ -133,6 +143,14 @@ public class ProductService implements IProductService  {
 
         Category category = categoryRepository.findByName(request.getCategory().getName());
         existingProduct.setCategory(category);
+
+        // Ajustar el precio basado en la variante más barata si existen variantes
+        existingProduct.setPrice(existingProduct.getEffectivePrice());
+        existingProduct.setInventory(existingProduct.getTotalInventory());
+
+        // Actualizar automáticamente el estado del producto según el stock
+        existingProduct.updateProductStatus();
+
         return existingProduct;
     }
 

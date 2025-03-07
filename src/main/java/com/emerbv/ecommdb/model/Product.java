@@ -43,6 +43,39 @@ public class Product {
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Image> images;
 
+    public BigDecimal getEffectivePrice() {
+        if (variants != null && !variants.isEmpty()) {
+            return  variants.stream()
+                    .map(Variant::getPrice)
+                    .min(BigDecimal::compareTo)
+                    .orElse(price);
+        }
+        return price;
+    }
+
+    public int getTotalInventory() {
+        if (variants != null && !variants.isEmpty()) {
+            return variants.stream()
+                    .mapToInt(Variant::getInventory)
+                    .sum();
+        }
+        return  inventory;
+    }
+
+    public void updateProductStatus() {
+        if (getTotalInventory() == 0) {
+            this.status = ProductStatus.OUT_OF_STOCK;
+        } else if (this.status == ProductStatus.OUT_OF_STOCK) {
+            this.status = ProductStatus.IN_STOCK;
+        }
+    }
+
+    public void updateProductDetails() {
+        this.price = getEffectivePrice(); // Obtener el precio más bajo de las variantes
+        this.inventory = getTotalInventory(); // Sumar el inventario de todas las variantes
+        updateProductStatus(); // Actualizar el estado según el inventario
+    }
+
     public Product(
             String name,
             String brand,
