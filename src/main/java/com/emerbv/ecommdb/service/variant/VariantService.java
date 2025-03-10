@@ -57,6 +57,11 @@ public class VariantService implements IVariantService {
 
             savedVariantsDto.add(savedVariantDto);
         }
+
+        // Actualizar los detalles del producto después de añadir todas las variantes
+        product.updateProductDetails();
+        productService.updateProductAfterVariantsChange(product);
+
         return savedVariantsDto;
     }
 
@@ -66,7 +71,14 @@ public class VariantService implements IVariantService {
             existingVariant.setName(request.getName());
             existingVariant.setPrice(request.getPrice());
             existingVariant.setInventory(request.getInventory());
-            return variantRepository.save(existingVariant);
+            Variant savedVariant = variantRepository.save(existingVariant);
+
+            // Actualizar el producto después de modificar la variante
+            Product product = existingVariant.getProduct();
+            product.updateProductDetails();
+            productService.updateProductAfterVariantsChange(product);
+
+            return savedVariant;
         }).orElseThrow(() -> new ResourceNotFoundException("Variant not found!"));
     }
 

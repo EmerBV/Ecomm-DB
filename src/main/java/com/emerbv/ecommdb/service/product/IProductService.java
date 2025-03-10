@@ -14,6 +14,7 @@ public interface IProductService {
     Product getProductById(Long id);
     void deleteProductById(Long id);
     Product updateProduct(ProductUpdateRequest product, Long productId);
+    void updateProductAfterVariantsChange(Product product);
 
     // ProductController
     List<Product> getAllProducts();

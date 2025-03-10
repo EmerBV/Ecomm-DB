@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -41,12 +42,22 @@ public class ProductService implements IProductService  {
                     + request.getName() + " already exists, you may update this product instead!");
         }
 
+        BigDecimal price = Optional.ofNullable(request.getPrice()).orElse(BigDecimal.ZERO);
+        request.setPrice(price);
+
+        int inventory = Math.max(request.getInventory(), 0);
+        request.setInventory(inventory);
+
         Category category = Optional.ofNullable(categoryRepository.findByName(request.getCategory().getName()))
                 .orElseGet(() -> {
                     Category newCategory = new Category(request.getCategory().getName());
                     return categoryRepository.save(newCategory);
                 });
         request.setCategory(category);
+
+        // Validación para evitar descuentos negativos
+        int discount = Math.max(request.getDiscountPercentage(), 0);
+        request.setDiscountPercentage(discount);
 
         return productRepository.save(createProduct(request, category));
     }
@@ -56,31 +67,31 @@ public class ProductService implements IProductService  {
     }
 
     public Product createProduct(AddProductRequest request, Category category) {
-        // Validación para evitar descuentos negativos
-        int discount = Math.max(request.getDiscountPercentage(), 0);
-        ProductStatus status = request.getStatus() != null ? request.getStatus() : ProductStatus.IN_STOCK;
-
-        Product product = new Product(
+        return new Product(
                 request.getName(),
                 request.getBrand(),
                 request.getPrice(),
                 request.getInventory(),
                 request.getDescription(),
                 category,
-                discount,
-                status,
+                request.getDiscountPercentage(),
+                request.getStatus(),
                 0,
                 0
         );
 
         // Ajustar el precio y el inventario basados en las variantes
-        product.setPrice(product.getEffectivePrice());
-        product.setInventory(product.getTotalInventory());
+        //product.setPrice(product.getEffectivePrice());
+        //product.setInventory(product.getTotalInventory());
 
         // Actualizar automáticamente el estado del producto según el stock
-        product.updateProductStatus();
+        //product.updateProductStatus();
 
-        return  product;
+        // Ajustar el precio, el inventario y el estado basados en las variantes
+        //product.updateProductDetails();
+
+        //return product;
+
     }
 
     @Override
@@ -132,26 +143,42 @@ public class ProductService implements IProductService  {
         existingProduct.setInventory(request.getInventory());
         existingProduct.setDescription(request.getDescription());
 
+        Category category = categoryRepository.findByName(request.getCategory().getName());
+        existingProduct.setCategory(category);
+
         // Validar descuento: evitar negativos
         int discount = Math.max(request.getDiscountPercentage(), 0);
         existingProduct.setDiscountPercentage(discount);
 
-        // Si el admin quiere cambiar el estado del producto (ejemplo: de "PRE_ORDER" a "IN_STOCK")
-        if (request.getStatus() != null) {
-            existingProduct.setStatus(request.getStatus());
-        }
-
-        Category category = categoryRepository.findByName(request.getCategory().getName());
-        existingProduct.setCategory(category);
-
+        /*
         // Ajustar el precio basado en la variante más barata si existen variantes
         existingProduct.setPrice(existingProduct.getEffectivePrice());
         existingProduct.setInventory(existingProduct.getTotalInventory());
 
         // Actualizar automáticamente el estado del producto según el stock
         existingProduct.updateProductStatus();
+         */
+
+        //existingProduct.updateProductDetails();
+
+        /*
+        // Solo establecer el estado manual si no es OUT_OF_STOCK por inventario
+        if (request.getStatus() != null && existingProduct.getTotalInventory() > 0) {
+            existingProduct.setStatus(request.getStatus());
+        }
+         */
+
+        /*
+        // Esto ahora manejará todo: precio, inventario y estado
+        existingProduct.updateProductDetails();
+         */
 
         return existingProduct;
+    }
+
+    @Override
+    public void updateProductAfterVariantsChange(Product product) {
+        productRepository.save(product);
     }
 
     @Override
