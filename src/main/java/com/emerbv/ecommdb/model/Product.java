@@ -19,10 +19,13 @@ public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     private String name;
     private String brand;
     private BigDecimal price;
     private int inventory;
+
+    @Column(length = 4000)
     private String description;
 
     @ManyToOne(cascade = CascadeType.ALL)
@@ -30,11 +33,14 @@ public class Product {
     private Category category;
 
     private int discountPercentage;
+
     @Enumerated(EnumType.STRING)
     private ProductStatus status;
+
     private int salesCount;
     private int wishCount;
     private boolean preOrder;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 
