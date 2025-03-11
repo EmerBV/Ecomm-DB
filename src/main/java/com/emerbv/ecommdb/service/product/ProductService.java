@@ -42,11 +42,17 @@ public class ProductService implements IProductService  {
                     + request.getName() + " already exists, you may update this product instead!");
         }
 
+        /*
         BigDecimal price = Optional.ofNullable(request.getPrice()).orElse(BigDecimal.ZERO);
         request.setPrice(price);
 
         int inventory = Math.max(request.getInventory(), 0);
         request.setInventory(inventory);
+        System.out.println("Cantidad de inventory: " + inventory);
+
+        int discount = Math.max(request.getDiscountPercentage(), 0);
+        request.setDiscountPercentage(discount);
+         */
 
         Category category = Optional.ofNullable(categoryRepository.findByName(request.getCategory().getName()))
                 .orElseGet(() -> {
@@ -54,10 +60,6 @@ public class ProductService implements IProductService  {
                     return categoryRepository.save(newCategory);
                 });
         request.setCategory(category);
-
-        // Validación para evitar descuentos negativos
-        int discount = Math.max(request.getDiscountPercentage(), 0);
-        request.setDiscountPercentage(discount);
 
         return productRepository.save(createProduct(request, category));
     }
@@ -79,19 +81,6 @@ public class ProductService implements IProductService  {
                 0,
                 0
         );
-
-        // Ajustar el precio y el inventario basados en las variantes
-        //product.setPrice(product.getEffectivePrice());
-        //product.setInventory(product.getTotalInventory());
-
-        // Actualizar automáticamente el estado del producto según el stock
-        //product.updateProductStatus();
-
-        // Ajustar el precio, el inventario y el estado basados en las variantes
-        //product.updateProductDetails();
-
-        //return product;
-
     }
 
     @Override
@@ -150,28 +139,9 @@ public class ProductService implements IProductService  {
         int discount = Math.max(request.getDiscountPercentage(), 0);
         existingProduct.setDiscountPercentage(discount);
 
-        /*
-        // Ajustar el precio basado en la variante más barata si existen variantes
-        existingProduct.setPrice(existingProduct.getEffectivePrice());
-        existingProduct.setInventory(existingProduct.getTotalInventory());
-
-        // Actualizar automáticamente el estado del producto según el stock
-        existingProduct.updateProductStatus();
-         */
-
-        //existingProduct.updateProductDetails();
-
-        /*
-        // Solo establecer el estado manual si no es OUT_OF_STOCK por inventario
-        if (request.getStatus() != null && existingProduct.getTotalInventory() > 0) {
-            existingProduct.setStatus(request.getStatus());
-        }
-         */
-
-        /*
-        // Esto ahora manejará todo: precio, inventario y estado
         existingProduct.updateProductDetails();
-         */
+        ProductStatus productStatus = existingProduct.getProductStatus();
+        existingProduct.setStatus(productStatus);
 
         return existingProduct;
     }

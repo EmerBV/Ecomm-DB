@@ -60,6 +60,7 @@ public class VariantService implements IVariantService {
 
         // Actualizar los detalles del producto después de añadir todas las variantes
         product.updateProductDetails();
+        product.getProductStatus();
         productService.updateProductAfterVariantsChange(product);
 
         return savedVariantsDto;
@@ -76,6 +77,7 @@ public class VariantService implements IVariantService {
             // Actualizar el producto después de modificar la variante
             Product product = existingVariant.getProduct();
             product.updateProductDetails();
+            product.getProductStatus();
             productService.updateProductAfterVariantsChange(product);
 
             return savedVariant;

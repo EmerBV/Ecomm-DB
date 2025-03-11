@@ -62,18 +62,18 @@ public class Product {
         return  inventory;
     }
 
-    public ProductStatus getStatus() {
-        if (getTotalInventory() == 0) {
-            status = ProductStatus.OUT_OF_STOCK;
-        } else {
-            status = ProductStatus.IN_STOCK;
-        }
-        return status;
-    }
-
     public void updateProductDetails() {
         this.price = getEffectivePrice(); // Obtener el precio más bajo de las variantes
         this.inventory = getTotalInventory(); // Sumar el inventario de todas las variantes
+    }
+
+    public ProductStatus getProductStatus() {
+        if (this.inventory == 0) {
+            this.status = ProductStatus.OUT_OF_STOCK;
+        } else {
+            this.status = ProductStatus.IN_STOCK;
+        }
+        return this.status;
     }
 
     public Product(
