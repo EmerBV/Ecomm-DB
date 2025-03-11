@@ -32,6 +32,9 @@ public interface IProductService {
     List<Product> getProductsByWishCount();
     List<Product> getRecentProducts();
 
+    List<Product> getPreOrderProducts();
+    List<Product> getPreOrderProductsByStatus(ProductStatus status);
+
     /*
     List<Product> getProductsByPrice(Double price);
     List<Product> getProductsByPriceRange(Double minPrice, Double maxPrice);

@@ -204,6 +204,34 @@ public class ProductController {
         }
     }
 
+    @GetMapping("/product/pre-order/all")
+    public ResponseEntity<ApiResponse> findAllPreOrderProducts() {
+        try {
+            List<Product> products = productService.getPreOrderProducts();
+            if (products.isEmpty()) {
+                return ResponseEntity.status(NOT_FOUND).body(new ApiResponse("No pre-order products found", null));
+            }
+            List<ProductDto> convertedProducts = productService.getConvertedProducts(products);
+            return ResponseEntity.ok(new ApiResponse("success", convertedProducts));
+        } catch (Exception e) {
+            return ResponseEntity.ok(new ApiResponse(e.getMessage(), null));
+        }
+    }
+
+    @GetMapping("/product/pre-order/{status}/products")
+    public ResponseEntity<ApiResponse> findPreOrderProductsByStatus(@PathVariable ProductStatus status) {
+        try {
+            List<Product> products = productService.getPreOrderProductsByStatus(status);
+            if (products.isEmpty()) {
+                return ResponseEntity.status(NOT_FOUND).body(new ApiResponse("No pre-order products found with status " + status, null));
+            }
+            List<ProductDto> convertedProducts = productService.getConvertedProducts(products);
+            return ResponseEntity.ok(new ApiResponse("success", convertedProducts));
+        } catch (Exception e) {
+            return ResponseEntity.ok(new ApiResponse(e.getMessage(), null));
+        }
+    }
+
     /*
     // New end point 1
     @GetMapping("/distinct/products")

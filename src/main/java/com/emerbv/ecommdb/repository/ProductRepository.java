@@ -34,6 +34,10 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     List<Product> findByCreatedAtAfter(LocalDateTime date);
 
+    List<Product> findByPreOrderTrue();
+
+    List<Product> findByPreOrderTrueAndStatus(ProductStatus status);
+
     // TODO
     /*
     // Nuevos métodos basados en el modelo Product:

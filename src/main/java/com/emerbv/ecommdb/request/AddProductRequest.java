@@ -17,4 +17,5 @@ public class AddProductRequest {
     private Category category;
     private int discountPercentage;
     private ProductStatus status;
+    private boolean preOrder;
 }

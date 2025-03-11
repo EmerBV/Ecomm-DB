@@ -22,6 +22,7 @@ public class ProductDto {
     private ProductStatus status;
     private int salesCount;
     private int wishCount;
+    private boolean preOrder;
     private LocalDateTime createdAt;
     private List<Variant> variants;
     private List<ImageDto> images;

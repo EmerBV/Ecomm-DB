@@ -34,6 +34,7 @@ public class Product {
     private ProductStatus status;
     private int salesCount;
     private int wishCount;
+    private boolean preOrder;
     @CreationTimestamp
     private LocalDateTime createdAt;
 
@@ -86,7 +87,8 @@ public class Product {
             int discountPercentage,
             ProductStatus status,
             int salesCount,
-            int wishCount
+            int wishCount,
+            boolean preOrder
     ) {
         this.name = name;
         this.brand = brand;
@@ -98,5 +100,6 @@ public class Product {
         this.status = status;
         this.salesCount = salesCount;
         this.wishCount = wishCount;
+        this.preOrder = preOrder;
     }
 }

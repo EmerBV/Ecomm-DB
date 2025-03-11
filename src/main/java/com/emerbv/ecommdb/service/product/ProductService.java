@@ -69,7 +69,7 @@ public class ProductService implements IProductService  {
     }
 
     public Product createProduct(AddProductRequest request, Category category) {
-        return new Product(
+        Product product = new Product(
                 request.getName(),
                 request.getBrand(),
                 request.getPrice(),
@@ -79,8 +79,13 @@ public class ProductService implements IProductService  {
                 request.getDiscountPercentage(),
                 request.getStatus(),
                 0,
-                0
+                0,
+                request.isPreOrder()
         );
+
+        product.getProductStatus();
+
+        return product;
     }
 
     @Override
@@ -131,6 +136,7 @@ public class ProductService implements IProductService  {
         existingProduct.setPrice(request.getPrice());
         existingProduct.setInventory(request.getInventory());
         existingProduct.setDescription(request.getDescription());
+        existingProduct.setPreOrder(request.isPreOrder());
 
         Category category = categoryRepository.findByName(request.getCategory().getName());
         existingProduct.setCategory(category);
@@ -228,6 +234,16 @@ public class ProductService implements IProductService  {
         List<Product> recentProducts = productRepository.findByCreatedAtAfter(sevenDaysAgo);
         return recentProducts;
          */
+    }
+
+    @Override
+    public List<Product> getPreOrderProducts() {
+        return productRepository.findByPreOrderTrue();
+    }
+
+    @Override
+    public List<Product> getPreOrderProductsByStatus(ProductStatus status) {
+        return productRepository.findByPreOrderTrueAndStatus(status);
     }
 
     /*
