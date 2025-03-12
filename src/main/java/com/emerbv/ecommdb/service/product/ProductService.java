@@ -10,7 +10,9 @@ import com.emerbv.ecommdb.model.*;
 import com.emerbv.ecommdb.repository.*;
 import com.emerbv.ecommdb.request.AddProductRequest;
 import com.emerbv.ecommdb.request.ProductUpdateRequest;
+import com.emerbv.ecommdb.util.HtmlSanitizer;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -29,13 +31,17 @@ public class ProductService implements IProductService  {
     private final ImageRepository imageRepository;
     private final CartItemRepository cartItemRepository;
     private final OrderItemRepository orderItemRepository;
+    private final HtmlSanitizer htmlSanitizer;
 
     @Override
+    @Transactional
     public Product addProduct(AddProductRequest request) {
         // Check if the category is found in the DB
         // If Yes, set it as the new product category
         // If No, then save it as a new category
         // Then set as the new product category
+
+        validateProductRequest(request);
 
         if (productExists(request.getName(), request.getBrand())) {
             throw new AlreadyExistsException(request.getBrand() + " "
@@ -54,22 +60,46 @@ public class ProductService implements IProductService  {
         request.setDiscountPercentage(discount);
          */
 
+        /*
         Category category = Optional.ofNullable(categoryRepository.findByName(request.getCategory().getName()))
                 .orElseGet(() -> {
                     Category newCategory = new Category(request.getCategory().getName());
                     return categoryRepository.save(newCategory);
                 });
         request.setCategory(category);
+         */
 
+        Category category = findOrCreateCategory(request.getCategory().getName());
         return productRepository.save(createProduct(request, category));
+    }
+
+    private void validateProductRequest(AddProductRequest request) {
+        // Sanitize inputs to prevent XSS
+        request.setName(htmlSanitizer.sanitize(request.getName()));
+        request.setBrand(htmlSanitizer.sanitize(request.getBrand()));
+        request.setDescription(htmlSanitizer.sanitize(request.getDescription()));
+
+        // Use Math.max for numeric validations instead of if statements
+        request.setInventory(Math.max(request.getInventory(), 0));
+        request.setDiscountPercentage(Math.max(request.getDiscountPercentage(), 0));
     }
 
     private boolean productExists(String name, String brand) {
         return productRepository.existsByNameAndBrand(name, brand);
     }
 
+    private Category findOrCreateCategory(String categoryName) {
+        return Optional.ofNullable(categoryRepository.findByName(categoryName))
+                .orElseGet(() -> {
+                    Category newCategory = new Category(htmlSanitizer.sanitize(categoryName));
+                    return categoryRepository.save(newCategory);
+                });
+    }
+
     public Product createProduct(AddProductRequest request, Category category) {
-        Product product = new Product(
+        ProductStatus status = determineProductStatus(request);
+
+        return new Product(
                 request.getName(),
                 request.getBrand(),
                 request.getPrice(),
@@ -77,15 +107,18 @@ public class ProductService implements IProductService  {
                 request.getDescription(),
                 category,
                 request.getDiscountPercentage(),
-                request.getStatus(),
+                status,
                 0,
                 0,
                 request.isPreOrder()
         );
+    }
 
-        product.getProductStatus();
-
-        return product;
+    private ProductStatus determineProductStatus(AddProductRequest request) {
+        if (request.getStatus() != null) {
+            return request.getStatus();
+        }
+        return request.getInventory() > 0 ? ProductStatus.IN_STOCK : ProductStatus.OUT_OF_STOCK;
     }
 
     @Override

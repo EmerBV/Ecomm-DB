@@ -9,6 +9,7 @@ import com.emerbv.ecommdb.request.AddProductRequest;
 import com.emerbv.ecommdb.request.ProductUpdateRequest;
 import com.emerbv.ecommdb.response.ApiResponse;
 import com.emerbv.ecommdb.service.product.IProductService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -45,7 +46,9 @@ public class ProductController {
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PostMapping("/add")
-    public ResponseEntity<ApiResponse> addProduct(@RequestBody AddProductRequest product) {
+    public ResponseEntity<ApiResponse> addProduct(
+            @Valid @RequestBody AddProductRequest product
+    ) {
         try {
             Product theProduct = productService.addProduct(product);
             ProductDto productDto = productService.convertToDto(theProduct);
@@ -57,7 +60,10 @@ public class ProductController {
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PutMapping("/product/{productId}/update")
-    public  ResponseEntity<ApiResponse> updateProduct(@RequestBody ProductUpdateRequest request, @PathVariable Long productId) {
+    public  ResponseEntity<ApiResponse> updateProduct(
+            @Valid @RequestBody ProductUpdateRequest request,
+            @PathVariable Long productId
+    ) {
         try {
             Product theProduct = productService.updateProduct(request, productId);
             ProductDto productDto = productService.convertToDto(theProduct);
@@ -79,7 +85,10 @@ public class ProductController {
     }
 
     @GetMapping("/products/by/brand-and-name")
-    public ResponseEntity<ApiResponse> getProductByBrandAndName(@RequestParam String brandName, @RequestParam String productName) {
+    public ResponseEntity<ApiResponse> getProductByBrandAndName(
+            @RequestParam String brandName,
+            @RequestParam String productName
+    ) {
         try {
             List<Product> products = productService.getProductsByBrandAndName(brandName, productName);
             if (products.isEmpty()) {
@@ -93,7 +102,10 @@ public class ProductController {
     }
 
     @GetMapping("/products/by/category-and-brand")
-    public ResponseEntity<ApiResponse> getProductByCategoryAndBrand(@RequestParam String category, @RequestParam String brand){
+    public ResponseEntity<ApiResponse> getProductByCategoryAndBrand(
+            @RequestParam String category,
+            @RequestParam String brand
+    ) {
         try {
             List<Product> products = productService.getProductsByCategoryAndBrand(category, brand);
             if (products.isEmpty()) {
@@ -107,7 +119,7 @@ public class ProductController {
     }
 
     @GetMapping("/products/{name}/products")
-    public ResponseEntity<ApiResponse> getProductByName(@PathVariable String name){
+    public ResponseEntity<ApiResponse> getProductByName(@PathVariable String name) {
         try {
             List<Product> products = productService.getProductsByName(name);
             if (products.isEmpty()) {
