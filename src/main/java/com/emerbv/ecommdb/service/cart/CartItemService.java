@@ -35,7 +35,8 @@ public class CartItemService implements ICartItemService {
         // 3. Check if the product already in the cart
         CartItem cartItem = cart.getItems()
                 .stream()
-                .filter(item -> item.getProduct().getId().equals(productId))
+                //.filter(item -> item.getProduct().getId().equals(productId))
+                .filter(item -> item.getProduct() != null && item.getProduct().getId().equals(productId))
                 .findFirst().orElse(new CartItem());
 
         // 4. If No, then initiate a new CartItem entry
@@ -48,6 +49,7 @@ public class CartItemService implements ICartItemService {
             // 5. If Yes, then increase the quantity with the requested quantity
             cartItem.setQuantity(cartItem.getQuantity() + quantity);
         }
+
         cartItem.setTotalPrice();
         cart.addItem(cartItem);
         cartItemRepository.save(cartItem);
@@ -67,13 +69,15 @@ public class CartItemService implements ICartItemService {
         Cart cart = cartService.getCart(cartId);
         cart.getItems()
                 .stream()
-                .filter(item -> item.getProduct().getId().equals(productId))
+                //.filter(item -> item.getProduct().getId().equals(productId))
+                .filter(item -> item.getProduct() != null && item.getProduct().getId().equals(productId))
                 .findFirst()
                 .ifPresent(item -> {
                     item.setQuantity(quantity);
                     item.setUnitPrice(item.getProduct().getPrice());
                     item.setTotalPrice();
                 });
+
         BigDecimal totalAmount = cart.getItems()
                 .stream().map(CartItem::getTotalPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -87,7 +91,8 @@ public class CartItemService implements ICartItemService {
         Cart cart = cartService.getCart(cartId);
         return  cart.getItems()
                 .stream()
-                .filter(item -> item.getProduct().getId().equals(productId))
+                //.filter(item -> item.getProduct().getId().equals(productId))
+                .filter(item -> item.getProduct() != null && item.getProduct().getId().equals(productId))
                 .findFirst().orElseThrow(() -> new ResourceNotFoundException("Item not found"));
     }
 }

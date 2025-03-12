@@ -9,6 +9,8 @@ import com.emerbv.ecommdb.exceptions.ResourceNotFoundException;
 import com.emerbv.ecommdb.model.*;
 import com.emerbv.ecommdb.repository.*;
 import com.emerbv.ecommdb.request.ProductRequest;
+import com.emerbv.ecommdb.service.cart.CartItemService;
+import com.emerbv.ecommdb.service.cart.CartService;
 import com.emerbv.ecommdb.util.HtmlSanitizer;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -16,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -30,6 +33,7 @@ public class ProductService implements IProductService  {
     private final CartItemRepository cartItemRepository;
     private final OrderItemRepository orderItemRepository;
     private final HtmlSanitizer htmlSanitizer;
+    private final CartRepository cartRepository;
 
     @Override
     @Transactional
@@ -106,6 +110,7 @@ public class ProductService implements IProductService  {
                 .orElseThrow(() -> new ProductNotFoundException("Product not found!"));
     }
 
+    /*
     @Override
     public void deleteProductById(Long id) {
         List<CartItem> cartItems = cartItemRepository.findByProductId(id);
@@ -132,6 +137,61 @@ public class ProductService implements IProductService  {
                 }, () -> {
                     throw new EntityNotFoundException("Product not found!");
                 });
+    }
+     */
+
+    @Override
+    @Transactional
+    public void deleteProductById(Long id) {
+        productRepository.findById(id)
+                .ifPresentOrElse(product -> deleteProductAndReferences(product, id), () -> {
+                    throw new EntityNotFoundException("Product not found!");
+                });
+    }
+
+    private void deleteProductAndReferences(Product product, Long productId) {
+        // Disassociate product from category
+        Optional.ofNullable(product.getCategory())
+                .ifPresent(category -> category.getProducts().remove(product));
+        product.setCategory(null);
+
+        // Batch update cart items
+        updateCartItemsForDeletedProduct(productId);
+
+        // Batch update order items
+        updateOrderItemsForDeletedProduct(productId);
+
+        // Finally delete the product
+        productRepository.delete(product);
+    }
+
+    @Transactional
+    private void updateCartItemsForDeletedProduct(Long productId) {
+        // Remove CartItems with this product instead of just setting product to null
+        List<CartItem> cartItems = cartItemRepository.findByProductId(productId);
+        if (!cartItems.isEmpty()) {
+            // First, disassociate the items from any carts they may be in
+            cartItems.forEach(item -> {
+                if (item.getCart() != null) {
+                    item.getCart().getItems().remove(item);
+                    // Update the cart's total amount
+                    item.getCart().updateTotalAmount();
+                    cartRepository.save(item.getCart());
+                }
+            });
+            // Then delete the cart items
+            cartItemRepository.deleteAll(cartItems);
+        }
+    }
+
+    @Transactional
+    private void updateOrderItemsForDeletedProduct(Long productId) {
+        // For OrderItems, keeping the null reference is okay since orders are historical records
+        List<OrderItem> orderItems = orderItemRepository.findByProductId(productId);
+        if (!orderItems.isEmpty()) {
+            orderItems.forEach(item -> item.setProduct(null));
+            orderItemRepository.saveAll(orderItems);
+        }
     }
 
     @Override
