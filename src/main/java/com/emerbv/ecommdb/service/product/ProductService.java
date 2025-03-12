@@ -46,29 +46,10 @@ public class ProductService implements IProductService  {
                     + request.getName() + " already exists, you may update this product instead!");
         }
 
-        /*
-        BigDecimal price = Optional.ofNullable(request.getPrice()).orElse(BigDecimal.ZERO);
-        request.setPrice(price);
-
-        int inventory = Math.max(request.getInventory(), 0);
-        request.setInventory(inventory);
-        System.out.println("Cantidad de inventory: " + inventory);
-
-        int discount = Math.max(request.getDiscountPercentage(), 0);
-        request.setDiscountPercentage(discount);
-         */
-
-        /*
-        Category category = Optional.ofNullable(categoryRepository.findByName(request.getCategory().getName()))
-                .orElseGet(() -> {
-                    Category newCategory = new Category(request.getCategory().getName());
-                    return categoryRepository.save(newCategory);
-                });
-        request.setCategory(category);
-         */
-
         Category category = findOrCreateCategory(request.getCategory().getName());
-        return productRepository.save(createProduct(request, category));
+        Product product = createProduct(request, category);
+
+        return productRepository.save(product);
     }
 
     private void validateProductRequest(ProductRequest request) {
