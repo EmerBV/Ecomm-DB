@@ -5,8 +5,7 @@ import com.emerbv.ecommdb.enums.ProductStatus;
 import com.emerbv.ecommdb.exceptions.AlreadyExistsException;
 import com.emerbv.ecommdb.exceptions.ResourceNotFoundException;
 import com.emerbv.ecommdb.model.Product;
-import com.emerbv.ecommdb.request.AddProductRequest;
-import com.emerbv.ecommdb.request.ProductUpdateRequest;
+import com.emerbv.ecommdb.request.ProductRequest;
 import com.emerbv.ecommdb.response.ApiResponse;
 import com.emerbv.ecommdb.service.product.IProductService;
 import jakarta.validation.Valid;
@@ -47,7 +46,7 @@ public class ProductController {
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PostMapping("/add")
     public ResponseEntity<ApiResponse> addProduct(
-            @Valid @RequestBody AddProductRequest product
+            @Valid @RequestBody ProductRequest product
     ) {
         try {
             Product theProduct = productService.addProduct(product);
@@ -61,7 +60,7 @@ public class ProductController {
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PutMapping("/product/{productId}/update")
     public  ResponseEntity<ApiResponse> updateProduct(
-            @Valid @RequestBody ProductUpdateRequest request,
+            @Valid @RequestBody ProductRequest request,
             @PathVariable Long productId
     ) {
         try {

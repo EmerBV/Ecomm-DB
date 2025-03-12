@@ -8,8 +8,7 @@ import com.emerbv.ecommdb.exceptions.ProductNotFoundException;
 import com.emerbv.ecommdb.exceptions.ResourceNotFoundException;
 import com.emerbv.ecommdb.model.*;
 import com.emerbv.ecommdb.repository.*;
-import com.emerbv.ecommdb.request.AddProductRequest;
-import com.emerbv.ecommdb.request.ProductUpdateRequest;
+import com.emerbv.ecommdb.request.ProductRequest;
 import com.emerbv.ecommdb.util.HtmlSanitizer;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -17,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -35,7 +33,7 @@ public class ProductService implements IProductService  {
 
     @Override
     @Transactional
-    public Product addProduct(AddProductRequest request) {
+    public Product addProduct(ProductRequest request) {
         // Check if the category is found in the DB
         // If Yes, set it as the new product category
         // If No, then save it as a new category
@@ -73,7 +71,7 @@ public class ProductService implements IProductService  {
         return productRepository.save(createProduct(request, category));
     }
 
-    private void validateProductRequest(AddProductRequest request) {
+    private void validateProductRequest(ProductRequest request) {
         // Sanitize inputs to prevent XSS
         request.setName(htmlSanitizer.sanitize(request.getName()));
         request.setBrand(htmlSanitizer.sanitize(request.getBrand()));
@@ -96,7 +94,7 @@ public class ProductService implements IProductService  {
                 });
     }
 
-    public Product createProduct(AddProductRequest request, Category category) {
+    public Product createProduct(ProductRequest request, Category category) {
         ProductStatus status = determineProductStatus(request);
 
         return new Product(
@@ -114,7 +112,7 @@ public class ProductService implements IProductService  {
         );
     }
 
-    private ProductStatus determineProductStatus(AddProductRequest request) {
+    private ProductStatus determineProductStatus(ProductRequest request) {
         if (request.getStatus() != null) {
             return request.getStatus();
         }
@@ -156,14 +154,14 @@ public class ProductService implements IProductService  {
     }
 
     @Override
-    public Product updateProduct(ProductUpdateRequest request, Long productId) {
+    public Product updateProduct(ProductRequest request, Long productId) {
         return productRepository.findById(productId)
                 .map(existingProduct -> updateExistingProduct(existingProduct, request))
                 .map(productRepository::save)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found!"));
     }
 
-    private Product updateExistingProduct(Product existingProduct, ProductUpdateRequest request) {
+    private Product updateExistingProduct(Product existingProduct, ProductRequest request) {
         existingProduct.setName(request.getName());
         existingProduct.setBrand(request.getBrand());
         existingProduct.setPrice(request.getPrice());

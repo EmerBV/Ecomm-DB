@@ -3,17 +3,16 @@ package com.emerbv.ecommdb.service.product;
 import com.emerbv.ecommdb.dto.ProductDto;
 import com.emerbv.ecommdb.enums.ProductStatus;
 import com.emerbv.ecommdb.model.Product;
-import com.emerbv.ecommdb.request.AddProductRequest;
-import com.emerbv.ecommdb.request.ProductUpdateRequest;
+import com.emerbv.ecommdb.request.ProductRequest;
 
 import java.util.List;
 
 public interface IProductService {
     // Product CRUD operations in ProductService
-    Product addProduct(AddProductRequest product);
+    Product addProduct(ProductRequest product);
     Product getProductById(Long id);
     void deleteProductById(Long id);
-    Product updateProduct(ProductUpdateRequest product, Long productId);
+    Product updateProduct(ProductRequest product, Long productId);
     void updateProductAfterVariantsChange(Product product);
 
     // Product retrieval operations in ProductController

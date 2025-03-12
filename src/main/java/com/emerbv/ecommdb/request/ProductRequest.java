@@ -11,7 +11,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 @Data
-public class AddProductRequest {
+public class ProductRequest {
     private Long id;
 
     @NotBlank(message = "Product name is required")
