@@ -2,6 +2,7 @@ package com.emerbv.ecommdb.repository;
 
 import com.emerbv.ecommdb.enums.ProductStatus;
 import com.emerbv.ecommdb.model.Product;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,31 +12,44 @@ import java.util.List;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
     // ProductService
+    @EntityGraph(attributePaths = {"category", "images"})
+    List<Product> findAll();
+
+    @EntityGraph(attributePaths = {"category", "images"})
     List<Product> findByCategoryName(String category);
 
+    @EntityGraph(attributePaths = {"category", "images"})
     List<Product> findByBrand(String brand);
 
+    @EntityGraph(attributePaths = {"category", "images"})
     List<Product> findByCategoryNameAndBrand(String category, String brand);
 
     @Query("SELECT p FROM Product p WHERE LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))")
     List<Product> findByName(@Param("name") String name);
 
+    @EntityGraph(attributePaths = {"category", "images"})
     List<Product> findByBrandAndName(String brand, String name);
 
     Long countByBrandAndName(String brand, String name);
 
     boolean existsByNameAndBrand(String name, String brand);
 
+    @EntityGraph(attributePaths = {"category", "images"})
     List<Product> findByStatus(ProductStatus status);
 
+    @EntityGraph(attributePaths = {"category", "images"})
     List<Product> findTop10ByOrderBySalesCountDesc();
 
+    @EntityGraph(attributePaths = {"category", "images"})
     List<Product> findTop10ByOrderByWishCountDesc();
 
+    @EntityGraph(attributePaths = {"category", "images"})
     List<Product> findByCreatedAtAfter(LocalDateTime date);
 
+    @EntityGraph(attributePaths = {"category", "images"})
     List<Product> findByPreOrderTrue();
 
+    @EntityGraph(attributePaths = {"category", "images"})
     List<Product> findByPreOrderTrueAndStatus(ProductStatus status);
 
     // TODO

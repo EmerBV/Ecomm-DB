@@ -29,7 +29,8 @@ public class Product {
     @Column(length = 4000)
     private String description;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    //@ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.LAZY) // Optimización de carga
     @JoinColumn(name = "category_id")
     private Category category;
 

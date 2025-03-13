@@ -1,0 +1,531 @@
+[
+  {
+    "id": 1,
+    "name": "Dragon Ball Infinite Studio Majin Vegeta Resin Statue",
+    "brand": "Infinite Studio",
+    "price": 225,
+    "inventory": 15,
+    "description": "Figura de resina de Majin Vegeta en escala 1/6, tamaño L20*D17*H32CM",
+    "category": {
+      "id": 1,
+      "name": "Dragon Ball"
+    },
+    "discountPercentage": 0,
+    "status": "IN_STOCK",
+    "salesCount": 0,
+    "wishCount": 0,
+    "preOrder": false,
+    "createdAt": "2025-03-05T15:15:50.648715",
+    "variants": [
+      {
+        "id": 1,
+        "name": "1/6",
+        "price": 225,
+        "inventory": 5
+      },
+      {
+        "id": 2,
+        "name": "1/4",
+        "price": 755,
+        "inventory": 5
+      },
+      {
+        "id": 3,
+        "name": "1/2",
+        "price": 795,
+        "inventory": 5
+      }
+    ],
+    "images": []
+  },
+  {
+    "id": 2,
+    "name": "One Piece Fantasy Studio Yamato Resin Statue",
+    "brand": "Fantasy Studio",
+    "price": 345,
+    "inventory": 10,
+    "description": "Estatua de resina de Yamato de One Piece",
+    "category": {
+      "id": 2,
+      "name": "One Piece"
+    },
+    "discountPercentage": 5,
+    "status": "IN_STOCK",
+    "salesCount": 0,
+    "wishCount": 0,
+    "preOrder": false,
+    "createdAt": "2025-03-05T15:15:50.648715",
+    "variants": [],
+    "images": []
+  },
+  {
+    "id": 3,
+    "name": "Dragon Ball Figure Class Goku Namek Resin Statue",
+    "brand": "Figure Class",
+    "price": 525,
+    "inventory": 20,
+    "description": "Estatua de resina de Goku en Namek de Dragon Ball",
+    "category": {
+      "id": 1,
+      "name": "Dragon Ball"
+    },
+    "discountPercentage": 4,
+    "status": "IN_STOCK",
+    "salesCount": 0,
+    "wishCount": 0,
+    "preOrder": false,
+    "createdAt": "2025-03-05T15:15:50.648715",
+    "variants": [
+      {
+        "id": 4,
+        "name": "Versión Normal",
+        "price": 525,
+        "inventory": 10
+      },
+      {
+        "id": 5,
+        "name": "Versión Deluxe",
+        "price": 765,
+        "inventory": 10
+      }
+    ],
+    "images": []
+  },
+  {
+    "id": 4,
+    "name": "One Piece Lx Studio Marshall D. Teach Resin Statue",
+    "brand": "Lx Studio",
+    "price": 399,
+    "inventory": 0,
+    "description": "Estatua de resina de Marshall D. Teach de One Piece",
+    "category": {
+      "id": 2,
+      "name": "One Piece"
+    },
+    "discountPercentage": 0,
+    "status": "OUT_OF_STOCK",
+    "salesCount": 0,
+    "wishCount": 0,
+    "preOrder": false,
+    "createdAt": "2025-03-05T15:15:50.648715",
+    "variants": [],
+    "images": []
+  },
+  {
+    "id": 5,
+    "name": "Dragon Ball Oracle x Figure Class Majin Vegeta Final Impact Resin Statue",
+    "brand": "Oracle x Figure Class",
+    "price": 445,
+    "inventory": 15,
+    "description": "Estatua de resina de Majin Vegeta Final Impact de Dragon Ball",
+    "category": {
+      "id": 1,
+      "name": "Dragon Ball"
+    },
+    "discountPercentage": 0,
+    "status": "IN_STOCK",
+    "salesCount": 0,
+    "wishCount": 0,
+    "preOrder": false,
+    "createdAt": "2025-03-05T15:15:50.648715",
+    "variants": [
+      {
+        "id": 6,
+        "name": "Versión Estándar",
+        "price": 445,
+        "inventory": 5
+      },
+      {
+        "id": 7,
+        "name": "Versión Deluxe",
+        "price": 685,
+        "inventory": 10
+      }
+    ],
+    "images": []
+  },
+  {
+    "id": 6,
+    "name": "Spirited Away Bard Studio x UP Studio Gallery Resin Statue",
+    "brand": "Bard Studio x UP Studio",
+    "price": 395,
+    "inventory": 10,
+    "description": "Estatua de resina de la galería de Spirited Away",
+    "category": {
+      "id": 14,
+      "name": "Spirited Away"
+    },
+    "discountPercentage": 0,
+    "status": "IN_STOCK",
+    "salesCount": 0,
+    "wishCount": 0,
+    "preOrder": false,
+    "createdAt": "2025-03-05T15:15:50.648715",
+    "variants": [
+      {
+        "id": 8,
+        "name": "Versión Estándar",
+        "price": 395,
+        "inventory": 5
+      },
+      {
+        "id": 9,
+        "name": "Versión Deluxe",
+        "price": 765,
+        "inventory": 5
+      }
+    ],
+    "images": []
+  },
+  {
+    "id": 7,
+    "name": "Chainsaw Man Modomodo Studio Makima Resin Statue",
+    "brand": "Modomodo Studio",
+    "price": 355,
+    "inventory": 2,
+    "description": "Scale 1/4 Size: (H) 56.5 cm x (D) 30 cm x (W) 32 cm",
+    "category": {
+      "id": 7,
+      "name": "Chainsaw Man"
+    },
+    "discountPercentage": 0,
+    "status": "IN_STOCK",
+    "salesCount": 0,
+    "wishCount": 0,
+    "preOrder": false,
+    "createdAt": "2025-03-05T15:15:50.648715",
+    "variants": [],
+    "images": []
+  },
+  {
+    "id": 8,
+    "name": "Naruto Xiu Studio Minato Namikaze Resin Statue",
+    "brand": "Xiu Studio",
+    "price": 275,
+    "inventory": 12,
+    "description": "Estatua de resina de Minato Namikaze de Naruto",
+    "category": {
+      "id": 3,
+      "name": "Naruto"
+    },
+    "discountPercentage": 10,
+    "status": "IN_STOCK",
+    "salesCount": 0,
+    "wishCount": 0,
+    "preOrder": false,
+    "createdAt": "2025-03-05T15:15:50.648715",
+    "variants": [
+      {
+        "id": 10,
+        "name": "Versión Normal",
+        "price": 275,
+        "inventory": 7
+      },
+      {
+        "id": 11,
+        "name": "Versión Deluxe",
+        "price": 525,
+        "inventory": 5
+      }
+    ],
+    "images": []
+  },
+  {
+    "id": 9,
+    "name": "Bleach HZ Studio Ichigo Kurosaki Hollow Resin Statue",
+    "brand": "HZ Studio",
+    "price": 320,
+    "inventory": 8,
+    "description": "Estatua de resina de Ichigo Kurosaki en modo Hollow de Bleach",
+    "category": {
+      "id": 6,
+      "name": "Bleach"
+    },
+    "discountPercentage": 0,
+    "status": "IN_STOCK",
+    "salesCount": 0,
+    "wishCount": 0,
+    "preOrder": false,
+    "createdAt": "2025-03-05T15:15:50.648715",
+    "variants": [],
+    "images": []
+  },
+  {
+    "id": 10,
+    "name": "Demon Slayer KNY Studio Nezuko Kamado Resin Statue",
+    "brand": "KNY Studio",
+    "price": 245,
+    "inventory": 6,
+    "description": "Estatua de resina de Nezuko Kamado de Demon Slayer",
+    "category": {
+      "id": 4,
+      "name": "Demon Slayer"
+    },
+    "discountPercentage": 5,
+    "status": "IN_STOCK",
+    "salesCount": 0,
+    "wishCount": 0,
+    "preOrder": false,
+    "createdAt": "2025-03-05T15:15:50.648715",
+    "variants": [
+      {
+        "id": 12,
+        "name": "Versión Estándar",
+        "price": 245,
+        "inventory": 3
+      },
+      {
+        "id": 13,
+        "name": "Versión Deluxe",
+        "price": 475,
+        "inventory": 3
+      }
+    ],
+    "images": []
+  },
+  {
+    "id": 11,
+    "name": "Jujutsu Kaisen Gugu x Mimo Studio Kid Itadori Yuji Resin Statue",
+    "brand": "Gugu",
+    "price": 135,
+    "inventory": 0,
+    "description": "Size:  16cm",
+    "category": {
+      "id": 5,
+      "name": "Jujutsu Kaisen"
+    },
+    "discountPercentage": 0,
+    "status": "IN_STOCK",
+    "salesCount": 0,
+    "wishCount": 0,
+    "preOrder": false,
+    "createdAt": "2025-03-05T15:16:54.838347",
+    "variants": [],
+    "images": []
+  },
+  {
+    "id": 12,
+    "name": "Jujutsu Kaisen Design Studio Itadori Yuji Resin Statue",
+    "brand": "Design Studio",
+    "price": 325,
+    "inventory": 13,
+    "description": "Version A (H) 32 cm x (D) 21 cm x (W) 45 cm, Version B , C (H) 29 cm x (D) 23 cm x (W) 43 cm",
+    "category": {
+      "id": 5,
+      "name": "Jujutsu Kaisen"
+    },
+    "discountPercentage": 0,
+    "status": "IN_STOCK",
+    "salesCount": 0,
+    "wishCount": 0,
+    "preOrder": false,
+    "createdAt": "2025-03-05T15:17:25.603754",
+    "variants": [
+      {
+        "id": 14,
+        "name": "A",
+        "price": 325,
+        "inventory": 3
+      },
+      {
+        "id": 15,
+        "name": "B",
+        "price": 325,
+        "inventory": 5
+      },
+      {
+        "id": 16,
+        "name": "C",
+        "price": 355,
+        "inventory": 5
+      }
+    ],
+    "images": []
+  },
+  {
+    "id": 13,
+    "name": "Monkey D. Luffy - Gear 5",
+    "brand": "Bandai Spirits",
+    "price": 39.99,
+    "inventory": 50,
+    "description": "Figura de Monkey D. Luffy en su transformación Gear 5, edición especial.",
+    "category": {
+      "id": 2,
+      "name": "One Piece"
+    },
+    "discountPercentage": 0,
+    "status": "IN_STOCK",
+    "salesCount": 0,
+    "wishCount": 0,
+    "preOrder": false,
+    "createdAt": "2025-03-05T15:17:50.918496",
+    "variants": [],
+    "images": []
+  },
+  {
+    "id": 14,
+    "name": "Spy x Family ZH Studio Anya Forger Cos Gojo Satoru Resin Statue",
+    "brand": "ZH Studio",
+    "price": 145,
+    "inventory": 4,
+    "description": "Limited No Of Unit:306",
+    "category": {
+      "id": 8,
+      "name": "Spy x Family"
+    },
+    "discountPercentage": 0,
+    "status": "IN_STOCK",
+    "salesCount": 10,
+    "wishCount": 10,
+    "preOrder": false,
+    "createdAt": "2025-03-05T21:07:42.781934",
+    "variants": [
+      {
+        "id": 17,
+        "name": "White hair",
+        "price": 145,
+        "inventory": 4
+      },
+      {
+        "id": 18,
+        "name": "Pink hair",
+        "price": 145,
+        "inventory": 4
+      }
+    ],
+    "images": []
+  },
+  {
+    "id": 15,
+    "name": "One Piece Big Feeler Studio Boa Hancock Resin Statue",
+    "brand": "Feeler Studio",
+    "price": 0,
+    "inventory": 1,
+    "description": "High Version (H) 47 cm x (D) 30.5 cm x (W) 50.5 cm ; Low Version (H) 32 cm x (D) 29 cm x (W) 40 cm ; Bonus  (H) 8 cm x (D) 5 cm x (W) 6 cm",
+    "category": {
+      "id": 2,
+      "name": "One Piece"
+    },
+    "discountPercentage": 0,
+    "status": "IN_STOCK",
+    "salesCount": 0,
+    "wishCount": 0,
+    "preOrder": true,
+    "createdAt": "2025-03-11T12:13:59.851391",
+    "variants": [],
+    "images": []
+  },
+  {
+    "id": 16,
+    "name": "Dandadan MaKou Studio Takakura Ken Resin Statue",
+    "brand": "MaKou Studio",
+    "price": 185,
+    "inventory": 9,
+    "description": "Size: Width 19cm, Height 29cm",
+    "category": {
+      "id": 9,
+      "name": "Dandadan"
+    },
+    "discountPercentage": 0,
+    "status": "IN_STOCK",
+    "salesCount": 0,
+    "wishCount": 0,
+    "preOrder": true,
+    "createdAt": "2025-03-12T17:39:47.99329",
+    "variants": [],
+    "images": []
+  },
+  {
+    "id": 17,
+    "name": "Attack on Titan Rm Studio Levi Ackerman Resin Statue",
+    "brand": "Rm Studio",
+    "price": 275,
+    "inventory": 8,
+    "description": "Estatua de resina de Levi Ackerman de Attack on Titan",
+    "category": {
+      "id": 10,
+      "name": "Attack on Titan"
+    },
+    "discountPercentage": 0,
+    "status": "IN_STOCK",
+    "salesCount": 0,
+    "wishCount": 0,
+    "preOrder": false,
+    "createdAt": "2025-03-13T15:15:50.648715",
+    "variants": [],
+    "images": []
+  },
+  {
+    "id": 18,
+    "name": "One Punch Man PZX Studio Saitama Resin Statue",
+    "brand": "PZX Studio",
+    "price": 315,
+    "inventory": 10,
+    "description": "Estatua de resina de Saitama de One Punch Man",
+    "category": {
+      "id": 11,
+      "name": "One Punch Man"
+    },
+    "discountPercentage": 5,
+    "status": "IN_STOCK",
+    "salesCount": 0,
+    "wishCount": 0,
+    "preOrder": false,
+    "createdAt": "2025-03-13T15:15:50.648715",
+    "variants": [
+      {
+        "id": 19,
+        "name": "Versión Normal",
+        "price": 315,
+        "inventory": 5
+      },
+      {
+        "id": 20,
+        "name": "Versión Deluxe",
+        "price": 525,
+        "inventory": 5
+      }
+    ],
+    "images": []
+  },
+  {
+    "id": 19,
+    "name": "Tokyo Revengers TS Studio Mikey Resin Statue",
+    "brand": "TS Studio",
+    "price": 285,
+    "inventory": 7,
+    "description": "Estatua de resina de Mikey de Tokyo Revengers",
+    "category": {
+      "id": 12,
+      "name": "Tokyo Revengers"
+    },
+    "discountPercentage": 0,
+    "status": "IN_STOCK",
+    "salesCount": 0,
+    "wishCount": 0,
+    "preOrder": false,
+    "createdAt": "2025-03-13T15:15:50.648715",
+    "variants": [],
+    "images": []
+  },
+  {
+    "id": 20,
+    "name": "Fullmetal Alchemist Alchemy Studio Edward Elric Resin Statue",
+    "brand": "Alchemy Studio",
+    "price": 335,
+    "inventory": 9,
+    "description": "Estatua de resina de Edward Elric de Fullmetal Alchemist",
+    "category": {
+      "id": 13,
+      "name": "Fullmetal Alchemist"
+    },
+    "discountPercentage": 0,
+    "status": "IN_STOCK",
+    "salesCount": 0,
+    "wishCount": 0,
+    "preOrder": false,
+    "createdAt": "2025-03-13T15:15:50.648715",
+    "variants": [],
+    "images": []
+  }
+]

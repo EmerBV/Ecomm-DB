@@ -9,16 +9,14 @@ import com.emerbv.ecommdb.exceptions.ResourceNotFoundException;
 import com.emerbv.ecommdb.model.*;
 import com.emerbv.ecommdb.repository.*;
 import com.emerbv.ecommdb.request.ProductRequest;
-import com.emerbv.ecommdb.service.cart.CartItemService;
-import com.emerbv.ecommdb.service.cart.CartService;
 import com.emerbv.ecommdb.util.HtmlSanitizer;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -196,6 +194,8 @@ public class ProductService implements IProductService  {
 
     @Override
     public Product updateProduct(ProductRequest request, Long productId) {
+        validateProductRequest(request);
+
         return productRepository.findById(productId)
                 .map(existingProduct -> updateExistingProduct(existingProduct, request))
                 .map(productRepository::save)
@@ -213,13 +213,22 @@ public class ProductService implements IProductService  {
         Category category = categoryRepository.findByName(request.getCategory().getName());
         existingProduct.setCategory(category);
 
-        // Validar descuento: evitar negativos
-        int discount = Math.max(request.getDiscountPercentage(), 0);
-        existingProduct.setDiscountPercentage(discount);
+        existingProduct.setDiscountPercentage(request.getDiscountPercentage());
 
+        /*
         existingProduct.updateProductDetails();
         ProductStatus productStatus = existingProduct.getProductStatus();
         existingProduct.setStatus(productStatus);
+         */
+
+        // Update status based on inventory unless explicitly set
+        if (request.getStatus() != null) {
+            existingProduct.setStatus(request.getStatus());
+        } else {
+            existingProduct.setStatus(
+                    existingProduct.getInventory() > 0 ? ProductStatus.IN_STOCK : ProductStatus.OUT_OF_STOCK
+            );
+        }
 
         return existingProduct;
     }
@@ -230,6 +239,7 @@ public class ProductService implements IProductService  {
     }
 
     @Override
+    @Cacheable(value = "allProducts")
     public List<Product> getAllProducts() {
         return productRepository.findAll();
     }
