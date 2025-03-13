@@ -4,6 +4,8 @@ import com.emerbv.ecommdb.model.Role;
 import com.emerbv.ecommdb.model.User;
 import com.emerbv.ecommdb.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,6 +21,7 @@ public class DataInitializer implements ApplicationListener<ApplicationReadyEven
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private static final Logger logger = LoggerFactory.getLogger(DataInitializer.class);
 
     @Override
     public void onApplicationEvent(ApplicationReadyEvent event) {
@@ -44,7 +47,8 @@ public class DataInitializer implements ApplicationListener<ApplicationReadyEven
             //user.setPassword("123456");
             user.setRoles(Set.of(userRole));
             userRepository.save(user);
-            System.out.println("Default vet user " + i + " created successfully.");
+            //System.out.println("Default vet user " + i + " created successfully.");
+            logger.info("Default vet user {} created successfully.", i);
         }
     }
 
@@ -52,10 +56,10 @@ public class DataInitializer implements ApplicationListener<ApplicationReadyEven
         roles.stream()
                 .filter(role -> roleRepository.findByName(role).isEmpty())
                 .map(Role:: new).forEach(roleRepository::save);
-
     }
 
     private void createDefaultAdminIfNotExits() {
+
         Role adminRole = roleRepository.findByName("ROLE_ADMIN").get();
         for (int i = 1; i<=2; i++){
             String defaultEmail = "admin" + i + "@email.com";
@@ -69,7 +73,8 @@ public class DataInitializer implements ApplicationListener<ApplicationReadyEven
             user.setPassword(passwordEncoder.encode("123456"));
             user.setRoles(Set.of(adminRole));
             userRepository.save(user);
-            System.out.println("Default admin user " + i + " created successfully.");
+            //System.out.println("Default admin user " + i + " created successfully.");
+            logger.info("Default admin user {} created successfully.", i);
         }
     }
 

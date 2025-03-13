@@ -33,6 +33,7 @@ public class UserService implements IUserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found!"));
     }
 
+    /*
     @Override
     public User createUser(CreateUserRequest request) {
         Role userRole = roleRepository.findByName("ROLE_USER").get();
@@ -63,6 +64,35 @@ public class UserService implements IUserService {
                     user.setRoles(Set.of(userRole));
                     return  userRepository.save(user);
                 }) .orElseThrow(() -> new AlreadyExistsException("Oops!" + request.getEmail() + "already exists!"));
+    }
+     */
+
+    private User createUserWithRole(CreateUserRequest request, String roleName) {
+        Role role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
+
+        return Optional.of(request)
+                .filter(user -> !userRepository.existsByEmail(request.getEmail()))
+                .map(req -> {
+                    User user = new User();
+                    user.setEmail(request.getEmail());
+                    user.setPassword(passwordEncoder.encode(request.getPassword()));
+                    user.setFirstName(request.getFirstName());
+                    user.setLastName(request.getLastName());
+                    user.setRoles(Set.of(role));
+                    return userRepository.save(user);
+                })
+                .orElseThrow(() -> new AlreadyExistsException("Oops! " + request.getEmail() + " already exists!"));
+    }
+
+    @Override
+    public User createUser(CreateUserRequest request) {
+        return createUserWithRole(request, "ROLE_USER");
+    }
+
+    @Override
+    public User createAdminUser(CreateUserRequest request) {
+        return createUserWithRole(request, "ROLE_ADMIN");
     }
 
     @Override

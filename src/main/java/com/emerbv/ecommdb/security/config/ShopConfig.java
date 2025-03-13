@@ -66,6 +66,7 @@ public class ShopConfig {
         return authProvider;
     }
 
+    /*
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
@@ -74,6 +75,23 @@ public class ShopConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth.requestMatchers(SECURED_URLS.toArray(String[]::new)).authenticated()
                         .anyRequest().permitAll());
+        http.authenticationProvider(daoAuthenticationProvider());
+        http.addFilterBefore(authTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+        return http.build();
+    }
+     */
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http.csrf(AbstractHttpConfigurer::disable)
+                .exceptionHandling(exception -> exception.authenticationEntryPoint(authEntryPoint))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth ->
+                        auth.requestMatchers("/ecommdb/api/v1/auth/**").permitAll()
+                                .requestMatchers("/ecommdb/api/v1/users/admin/**").hasRole("ADMIN")
+                                .requestMatchers(SECURED_URLS.toArray(String[]::new)).authenticated()
+                                .anyRequest().permitAll()
+                );
         http.authenticationProvider(daoAuthenticationProvider());
         http.addFilterBefore(authTokenFilter(), UsernamePasswordAuthenticationFilter.class);
         return http.build();

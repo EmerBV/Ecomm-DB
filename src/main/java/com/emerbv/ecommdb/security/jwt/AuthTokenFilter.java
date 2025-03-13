@@ -41,8 +41,15 @@ public class AuthTokenFilter extends OncePerRequestFilter {
             response.getWriter().write(e.getMessage() + " : Invalid or expired token, you may login and try again!");
             return;
         } catch (Exception e) {
+            /*
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             response.getWriter().write(e.getMessage());
+             */
+
+            logger.error("Cannot set user authentication: " + e.getMessage(), e);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("Authentication failed");
+
             return;
 
         }
