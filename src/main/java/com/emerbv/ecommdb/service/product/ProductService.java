@@ -103,6 +103,7 @@ public class ProductService implements IProductService  {
     }
 
     @Override
+    //@Cacheable(value = "products", key = "#id")
     public Product getProductById(Long id) {
         return productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException("Product not found!"));
@@ -215,6 +216,9 @@ public class ProductService implements IProductService  {
 
         existingProduct.setDiscountPercentage(request.getDiscountPercentage());
 
+        ProductStatus status = determineProductStatus(request);
+        existingProduct.setStatus(status);
+
         /*
         existingProduct.updateProductDetails();
         ProductStatus productStatus = existingProduct.getProductStatus();
@@ -239,7 +243,7 @@ public class ProductService implements IProductService  {
     }
 
     @Override
-    @Cacheable(value = "allProducts")
+    //@Cacheable(value = "allProducts")
     public List<Product> getAllProducts() {
         return productRepository.findAll();
     }
