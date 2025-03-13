@@ -6,8 +6,10 @@ import com.emerbv.ecommdb.model.Variant;
 import com.emerbv.ecommdb.request.VariantUpdateRequest;
 import com.emerbv.ecommdb.response.ApiResponse;
 import com.emerbv.ecommdb.service.variant.IVariantService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,10 +23,11 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 public class VariantController {
     private final IVariantService variantService;
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PostMapping("/variant/add")
     public ResponseEntity<ApiResponse> saveVariants(
             @RequestParam Long productId,
-            @RequestBody List<VariantDto> variants
+            @Valid @RequestBody List<VariantDto> variants
     ) {
         try {
             List<VariantDto> variantsDto = variantService.saveVariants(productId, variants);
@@ -46,8 +49,12 @@ public class VariantController {
         }
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PutMapping("/variant/{variantId}/update")
-    public ResponseEntity<ApiResponse> updateVariant(@RequestBody VariantUpdateRequest request, @PathVariable Long variantId) {
+    public ResponseEntity<ApiResponse> updateVariant(
+            @RequestBody VariantUpdateRequest request,
+            @PathVariable Long variantId
+    ) {
         try {
             Variant variant = variantService.updateVariant(request, variantId);
             VariantDto variantDto = variantService.convertVariantToDto(variant);
@@ -57,6 +64,7 @@ public class VariantController {
         }
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @DeleteMapping("/variant/{variantId}/delete")
     public ResponseEntity<ApiResponse> deleteVariant(@PathVariable Long variantId) {
         try {

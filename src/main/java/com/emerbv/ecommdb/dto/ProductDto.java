@@ -24,6 +24,6 @@ public class ProductDto {
     private int wishCount;
     private boolean preOrder;
     private LocalDateTime createdAt;
-    private List<Variant> variants;
+    private List<VariantDto> variants;
     private List<ImageDto> images;
 }
