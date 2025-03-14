@@ -3,7 +3,7 @@ package com.emerbv.ecommdb.controller;
 import com.emerbv.ecommdb.dto.VariantDto;
 import com.emerbv.ecommdb.exceptions.ResourceNotFoundException;
 import com.emerbv.ecommdb.model.Variant;
-import com.emerbv.ecommdb.request.VariantUpdateRequest;
+import com.emerbv.ecommdb.request.VariantRequest;
 import com.emerbv.ecommdb.response.ApiResponse;
 import com.emerbv.ecommdb.service.variant.IVariantService;
 import jakarta.validation.Valid;
@@ -11,8 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
@@ -25,16 +23,17 @@ public class VariantController {
 
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PostMapping("/variant/add")
-    public ResponseEntity<ApiResponse> saveVariants(
-            @RequestParam Long productId,
-            @Valid @RequestBody List<VariantDto> variants
+    public ResponseEntity<ApiResponse> addVariant(
+            @Valid @RequestBody VariantRequest variant,
+            @RequestParam Long productId
     ) {
         try {
-            List<VariantDto> variantsDto = variantService.saveVariants(productId, variants);
-            return ResponseEntity.ok(new ApiResponse("Variants added successfully!", variantsDto));
+            Variant theVariant = variantService.addVariant(variant, productId);
+            VariantDto variantDto = variantService.convertVariantToDto(theVariant);
+            return ResponseEntity.ok(new ApiResponse("Variant added successfully!", variantDto));
         } catch (Exception e) {
             return ResponseEntity.status(INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse("Add variants failed!", e.getMessage()));
+                    .body(new ApiResponse("Add variant failed!", e.getMessage()));
         }
     }
 
@@ -52,7 +51,7 @@ public class VariantController {
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PutMapping("/variant/{variantId}/update")
     public ResponseEntity<ApiResponse> updateVariant(
-            @RequestBody VariantUpdateRequest request,
+            @RequestBody VariantRequest request,
             @PathVariable Long variantId
     ) {
         try {

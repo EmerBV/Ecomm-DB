@@ -412,7 +412,20 @@
     "wishCount": 0,
     "preOrder": true,
     "createdAt": "2025-03-11T12:13:59.851391",
-    "variants": [],
+    "variants": [
+      {
+        "id": 19,
+        "name": "High",
+        "price": 425,
+        "inventory": 3
+      },
+      {
+        "id": 20,
+        "name": "Low",
+        "price": 225,
+        "inventory": 3
+      }
+    ],
     "images": []
   },
   {
@@ -474,13 +487,13 @@
     "createdAt": "2025-03-13T15:15:50.648715",
     "variants": [
       {
-        "id": 19,
+        "id": 21,
         "name": "Versión Normal",
         "price": 315,
         "inventory": 5
       },
       {
-        "id": 20,
+        "id": 22,
         "name": "Versión Deluxe",
         "price": 525,
         "inventory": 5
@@ -490,10 +503,10 @@
   },
   {
     "id": 19,
-    "name": "Tokyo Revengers TS Studio Mikey Resin Statue",
-    "brand": "TS Studio",
-    "price": 285,
-    "inventory": 7,
+    "name": "Tokyo Revengers JR Studio Mikey Resin Statue",
+    "brand": "JR Studio",
+    "price": 275,
+    "inventory": 0,
     "description": "Estatua de resina de Mikey de Tokyo Revengers",
     "category": {
       "id": 12,
@@ -526,6 +539,39 @@
     "preOrder": false,
     "createdAt": "2025-03-13T15:15:50.648715",
     "variants": [],
+    "images": []
+  },
+  {
+    "id": 21,
+    "name": "Kimetsu No Yaiba Ming Long Studio Giyu Tomioka Resin Statue",
+    "brand": "Ming Long Studio",
+    "price": 199.00,
+    "inventory": 2,
+    "description": "Estatua de resina de Giyu Tomioka de Kimetsu No Yaiba",
+    "category": {
+      "id": 4,
+      "name": "Demon Slayer"
+    },
+    "discountPercentage": 0,
+    "status": "IN_STOCK",
+    "salesCount": 0,
+    "wishCount": 0,
+    "preOrder": false,
+    "createdAt": "2025-03-14T14:46:15.27476",
+    "variants": [
+      {
+        "id": 23,
+        "name": "1/6",
+        "price": 299.00,
+        "inventory": 1
+      },
+      {
+        "id": 24,
+        "name": "1/8",
+        "price": 199.00,
+        "inventory": 1
+      }
+    ],
     "images": []
   }
 ]
