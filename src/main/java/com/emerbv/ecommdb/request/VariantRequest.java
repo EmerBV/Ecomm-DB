@@ -9,7 +9,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 @Data
-public class VariantUpdateRequest {
+public class VariantRequest {
     private Long id;
 
     @NotBlank(message = "Variant name is required")

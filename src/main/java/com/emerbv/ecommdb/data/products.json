@@ -412,7 +412,20 @@
     "wishCount": 0,
     "preOrder": true,
     "createdAt": "2025-03-11T12:13:59.851391",
-    "variants": [],
+    "variants": [
+      {
+        "id": 19,
+        "name": "High",
+        "price": 425,
+        "inventory": 3
+      },
+      {
+        "id": 20,
+        "name": "Low",
+        "price": 225,
+        "inventory": 3
+      }
+    ],
     "images": []
   },
   {
@@ -474,13 +487,13 @@
     "createdAt": "2025-03-13T15:15:50.648715",
     "variants": [
       {
-        "id": 19,
+        "id": 21,
         "name": "Versión Normal",
         "price": 315,
         "inventory": 5
       },
       {
-        "id": 20,
+        "id": 22,
         "name": "Versión Deluxe",
         "price": 525,
         "inventory": 5

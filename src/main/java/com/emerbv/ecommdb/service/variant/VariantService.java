@@ -1,11 +1,12 @@
 package com.emerbv.ecommdb.service.variant;
 
 import com.emerbv.ecommdb.dto.VariantDto;
+import com.emerbv.ecommdb.enums.ProductStatus;
 import com.emerbv.ecommdb.exceptions.ResourceNotFoundException;
 import com.emerbv.ecommdb.model.Product;
 import com.emerbv.ecommdb.model.Variant;
 import com.emerbv.ecommdb.repository.VariantRepository;
-import com.emerbv.ecommdb.request.VariantUpdateRequest;
+import com.emerbv.ecommdb.request.VariantRequest;
 import com.emerbv.ecommdb.service.product.IProductService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
@@ -32,6 +33,28 @@ public class VariantService implements IVariantService {
         variantRepository.findById(id).ifPresentOrElse(variantRepository::delete, () -> {
             throw new ResourceNotFoundException("No variant found with id: " + id);
         });
+    }
+
+    @Override
+    public Variant addVariant(VariantRequest request, Long productId) {
+        Product product = productService.getProductById(productId);
+        Variant variant = createVariant(request, product);
+
+        return variantRepository.save(variant);
+    }
+
+    public Variant createVariant(VariantRequest request, Product product) {
+        Variant theVariant = new Variant();
+        theVariant.setName(request.getName());
+        theVariant.setPrice(request.getPrice());
+        theVariant.setInventory(request.getInventory());
+        theVariant.setProduct(product);
+
+        product.setStatus(
+                request.getInventory() > 0 ? ProductStatus.IN_STOCK : ProductStatus.OUT_OF_STOCK
+        );
+
+        return theVariant;
     }
 
     @Override
@@ -67,7 +90,7 @@ public class VariantService implements IVariantService {
     }
 
     @Override
-    public Variant updateVariant(VariantUpdateRequest request, Long variantId) {
+    public Variant updateVariant(VariantRequest request, Long variantId) {
         return  variantRepository.findById(variantId).map(existingVariant -> {
             existingVariant.setName(request.getName());
             existingVariant.setPrice(request.getPrice());
@@ -77,7 +100,7 @@ public class VariantService implements IVariantService {
             // Actualizar el producto después de modificar la variante
             Product product = existingVariant.getProduct();
             product.updateProductDetails();
-            product.getProductStatus();
+            //product.getProductStatus();
             productService.updateProductAfterVariantsChange(product);
 
             return savedVariant;
