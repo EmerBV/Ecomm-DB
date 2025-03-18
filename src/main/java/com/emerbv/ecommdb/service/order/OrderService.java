@@ -73,6 +73,9 @@ public class OrderService implements IOrderService {
             // Actualizar inventario
             updateInventory(product, cartItem);
 
+            // Actualizar número de ventas
+            updateSalesCount(product, cartItem);
+
             // Crear OrderItem con los campos básicos
             OrderItem orderItem = new OrderItem(
                     order,
@@ -107,6 +110,10 @@ public class OrderService implements IOrderService {
             product.setInventory(product.getInventory() - cartItem.getQuantity());
             productRepository.save(product);
         }
+    }
+
+    private void updateSalesCount(Product product, CartItem cartItem) {
+        product.setSalesCount(product.getSalesCount() + cartItem.getQuantity());
     }
 
     private BigDecimal calculateTotalAmount(List<OrderItem> orderItemList) {
