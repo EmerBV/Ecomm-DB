@@ -22,6 +22,10 @@ public class CartItem {
     private BigDecimal unitPrice;
     private BigDecimal totalPrice;
 
+    // Campos para variantes
+    private Long variantId;
+    private String variantName;
+
     @ManyToOne
     @JoinColumn(name = "product_id")
     private Product product;

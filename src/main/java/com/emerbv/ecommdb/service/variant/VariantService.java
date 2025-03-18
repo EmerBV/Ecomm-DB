@@ -26,7 +26,7 @@ public class VariantService implements IVariantService {
     @Override
     public Variant getVariantById(Long id) {
         return variantRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("No image found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Variant not found with id: " + id));
     }
 
     @Override
