@@ -18,6 +18,10 @@ public class OrderItem {
     private int quantity;
     private BigDecimal price;
 
+    // Campos para la variante
+    private Long variantId;
+    private String variantName;
+
     @ManyToOne
     @JoinColumn(name = "order_id")
     private Order order;
@@ -26,10 +30,21 @@ public class OrderItem {
     @JoinColumn(name = "product_id")
     private Product product;
 
-    public OrderItem(Order order, Product product, int quantity, BigDecimal price) {
+    public OrderItem(
+            Order order,
+            Product product,
+            int quantity,
+            BigDecimal price
+    ) {
         this.order = order;
         this.product = product;
         this.quantity = quantity;
         this.price = price;
     }
+
+    // Método para calcular el precio total del ítem
+    public BigDecimal getTotalPrice() {
+        return this.price.multiply(new BigDecimal(this.quantity));
+    }
+
 }
