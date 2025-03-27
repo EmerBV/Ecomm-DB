@@ -1,5 +1,6 @@
 package com.emerbv.ecommdb.controller;
 
+import com.emerbv.ecommdb.dto.CartDto;
 import com.emerbv.ecommdb.exceptions.ResourceNotFoundException;
 import com.emerbv.ecommdb.model.Cart;
 import com.emerbv.ecommdb.model.User;
@@ -61,7 +62,11 @@ public class CartItemController {
                 cartItemService.addItemToCartWithoutVariant(cart.getId(), productId, quantity);
             }
 
-            return ResponseEntity.ok(new ApiResponse("Add Item Success", null));
+            // Get the updated cart to return as part of the response
+            Cart updatedCart = cartService.getCartByUserId(user.getId());
+            CartDto cartDto = cartService.convertToDto(updatedCart);
+
+            return ResponseEntity.ok(new ApiResponse("Add Item Success", cartDto));
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.status(NOT_FOUND).body(new ApiResponse(e.getMessage(), null));
         } catch (JwtException e) {
@@ -76,21 +81,31 @@ public class CartItemController {
     ) {
         try {
             cartItemService.removeItemFromCart(cartId, productId);
-            return ResponseEntity.ok(new ApiResponse("Remove Item Success", null));
+
+            // Get the updated cart
+            Cart updatedCart = cartService.getCart(cartId);
+            CartDto cartDto = cartService.convertToDto(updatedCart);
+
+            return ResponseEntity.ok(new ApiResponse("Remove Item Success", cartDto));
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.status(NOT_FOUND).body(new ApiResponse(e.getMessage(), null));
         }
     }
 
-    @PutMapping("/cart/{cartId}/item/{itemId}/update")
-    public  ResponseEntity<ApiResponse> updateItemQuantity(
+    @PutMapping("/cart/{cartId}/item/{productId}/update")
+    public ResponseEntity<ApiResponse> updateItemQuantity(
             @PathVariable Long cartId,
-            @PathVariable Long itemId,
+            @PathVariable Long productId,
             @RequestParam Integer quantity
     ) {
         try {
-            cartItemService.updateItemQuantity(cartId, itemId, quantity);
-            return ResponseEntity.ok(new ApiResponse("Update Item Success", null));
+            cartItemService.updateItemQuantity(cartId, productId, quantity);
+
+            // Get the updated cart after the change
+            Cart updatedCart = cartService.getCart(cartId);
+            CartDto cartDto = cartService.convertToDto(updatedCart);
+
+            return ResponseEntity.ok(new ApiResponse("Update Item Success", cartDto));
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.status(NOT_FOUND).body(new ApiResponse(e.getMessage(), null));
         }

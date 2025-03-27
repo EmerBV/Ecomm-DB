@@ -41,13 +41,27 @@ public class Cart {
     }
 
     public void updateTotalAmount() {
-        this.totalAmount = items.stream().map(item -> {
-            BigDecimal unitPrice = item.getUnitPrice();
-            if (unitPrice == null) {
-                return  BigDecimal.ZERO;
-            }
-            return unitPrice.multiply(BigDecimal.valueOf(item.getQuantity()));
-        }).reduce(BigDecimal.ZERO, BigDecimal::add);
+        this.totalAmount = items.stream()
+                .map(item -> {
+                    // Ensure we're using the CartItem's totalPrice
+                    if (item.getTotalPrice() != null) {
+                        return item.getTotalPrice();
+                    }
+
+                    // If totalPrice isn't set, calculate it from unit price and quantity
+                    BigDecimal unitPrice = item.getUnitPrice();
+                    if (unitPrice == null) {
+                        return BigDecimal.ZERO;
+                    }
+
+                    BigDecimal calculatedTotal = unitPrice.multiply(BigDecimal.valueOf(item.getQuantity()));
+
+                    // Update the item's totalPrice to match
+                    item.setTotalPrice(calculatedTotal);
+
+                    return calculatedTotal;
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     public void clearCart() {

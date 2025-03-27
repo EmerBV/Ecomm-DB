@@ -154,22 +154,25 @@ public class CartItemService implements ICartItemService {
     @Override
     public void updateItemQuantity(Long cartId, Long productId, int quantity) {
         Cart cart = cartService.getCart(cartId);
-        cart.getItems()
+
+        CartItem itemToUpdate = cart.getItems()
                 .stream()
-                //.filter(item -> item.getProduct().getId().equals(productId))
                 .filter(item -> item.getProduct() != null && item.getProduct().getId().equals(productId))
-                .findFirst()
-                .ifPresent(item -> {
-                    item.setQuantity(quantity);
-                    item.setUnitPrice(item.getProduct().getPrice());
-                    item.setTotalPrice();
-                });
+                .findFirst().orElseThrow(() -> new ResourceNotFoundException("Item not found"));
 
-        BigDecimal totalAmount = cart.getItems()
-                .stream().map(CartItem::getTotalPrice)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // Update the quantity
+        itemToUpdate.setQuantity(quantity);
 
-        cart.setTotalAmount(totalAmount);
+        // Explicitly recalculate the total price
+        if (itemToUpdate.getUnitPrice() != null) {
+            itemToUpdate.setTotalPrice(itemToUpdate.getUnitPrice().multiply(new BigDecimal(quantity)));
+        }
+
+        // Update cart item
+        cartItemRepository.save(itemToUpdate);
+
+        // Update the cart's total amount
+        cart.updateTotalAmount();
         cartRepository.save(cart);
     }
 
@@ -178,7 +181,6 @@ public class CartItemService implements ICartItemService {
         Cart cart = cartService.getCart(cartId);
         return  cart.getItems()
                 .stream()
-                //.filter(item -> item.getProduct().getId().equals(productId))
                 .filter(item -> item.getProduct() != null && item.getProduct().getId().equals(productId))
                 .findFirst().orElseThrow(() -> new ResourceNotFoundException("Item not found"));
     }

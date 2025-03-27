@@ -36,6 +36,15 @@ public class CartItem {
     private Cart cart;
 
     public void setTotalPrice() {
-        this.totalPrice = this.unitPrice.multiply(new BigDecimal(quantity));
+        if (unitPrice == null) {
+            this.totalPrice = BigDecimal.ZERO;
+        } else {
+            this.totalPrice = unitPrice.multiply(new BigDecimal(quantity));
+        }
+    }
+
+    // Allow manual setting of total price
+    public void setTotalPrice(BigDecimal totalPrice) {
+        this.totalPrice = totalPrice;
     }
 }
