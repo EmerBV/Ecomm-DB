@@ -18,9 +18,11 @@ public class ShippingDetails {
     private Long id;
     private String address;
     private String city;
+    private String state;
     private String postalCode;
     private String country;
     private String phoneNumber;
+    private String fullName;
 
     @JsonIgnore
     @OneToOne
