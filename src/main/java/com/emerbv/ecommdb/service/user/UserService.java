@@ -1,9 +1,11 @@
 package com.emerbv.ecommdb.service.user;
 
 import com.emerbv.ecommdb.data.RoleRepository;
+import com.emerbv.ecommdb.dto.PaymentMethodDto;
 import com.emerbv.ecommdb.dto.UserDto;
 import com.emerbv.ecommdb.exceptions.AlreadyExistsException;
 import com.emerbv.ecommdb.exceptions.ResourceNotFoundException;
+import com.emerbv.ecommdb.model.CustomerPaymentMethod;
 import com.emerbv.ecommdb.model.Role;
 import com.emerbv.ecommdb.model.User;
 import com.emerbv.ecommdb.repository.UserRepository;
@@ -15,9 +17,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +33,7 @@ public class UserService implements IUserService {
     private final PasswordEncoder passwordEncoder;
 
     @Override
+    @Transactional(readOnly = true)
     public User getUserById(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found!"));
@@ -113,11 +119,30 @@ public class UserService implements IUserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public UserDto convertUserToDto(User user) {
-        return modelMapper.map(user, UserDto.class);
+        UserDto userDto = modelMapper.map(user, UserDto.class);
+
+        // Mapeamos los métodos de pago si existen
+        if (user.getPaymentMethods() != null && !user.getPaymentMethods().isEmpty()) {
+            List<PaymentMethodDto> paymentMethodDtos = user.getPaymentMethods().stream()
+                    .map(this::convertPaymentMethodToDto)
+                    .collect(Collectors.toList());
+            userDto.setPaymentMethods(paymentMethodDtos);
+        }
+
+        return userDto;
+    }
+
+    /**
+     * Convierte un CustomerPaymentMethod a PaymentMethodDto
+     */
+    private PaymentMethodDto convertPaymentMethodToDto(CustomerPaymentMethod paymentMethod) {
+        return modelMapper.map(paymentMethod, PaymentMethodDto.class);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public User getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();

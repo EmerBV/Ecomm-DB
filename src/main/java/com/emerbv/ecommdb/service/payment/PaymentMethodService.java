@@ -8,12 +8,13 @@ import com.emerbv.ecommdb.model.CustomerPaymentMethod;
 import com.emerbv.ecommdb.model.User;
 import com.emerbv.ecommdb.repository.CustomerPaymentMethodRepository;
 import com.emerbv.ecommdb.service.user.IUserService;
-import com.stripe.Stripe;
 import com.stripe.model.PaymentMethod;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +39,7 @@ public class PaymentMethodService implements IPaymentMethodService {
      */
     @Override
     @Transactional
+    @CacheEvict(value = {"defaultPaymentMethods", "userPaymentMethods"}, key = "#userId")
     public PaymentMethodDto savePaymentMethod(Long userId, String paymentMethodId, boolean setAsDefault) {
         // Verificar si el usuario existe
         User user = userService.getUserById(userId);
@@ -85,24 +87,29 @@ public class PaymentMethodService implements IPaymentMethodService {
 
             // Si este método debe ser el predeterminado, actualizar los demás
             if (setAsDefault) {
-                paymentMethodRepository.findByUserIdAndIsDefaultTrue(userId)
-                        .ifPresent(existingDefault -> {
-                            existingDefault.setDefault(false);
-                            paymentMethodRepository.save(existingDefault);
-                        });
+                CustomerPaymentMethod existingDefault = user.getDefaultPaymentMethod();
+                if (existingDefault != null) {
+                    existingDefault.setDefault(false);
+                    paymentMethodRepository.save(existingDefault);
+                }
             }
 
-            // Crear y guardar el nuevo método de pago
+            // Crear el nuevo método de pago
             CustomerPaymentMethod paymentMethod = new CustomerPaymentMethod(
                     user, paymentMethodId, type, last4, brand, expiryMonth, expiryYear, setAsDefault
             );
 
+            // Utilizar el método de conveniencia para añadir el método de pago al usuario
+            user.addPaymentMethod(paymentMethod);
+
+            // Guardar el método de pago
             CustomerPaymentMethod savedMethod = paymentMethodRepository.save(paymentMethod);
 
             // Convertir a DTO y devolver
             return convertToDto(savedMethod);
 
         } catch (Exception e) {
+            logger.error("Error al guardar método de pago para usuario {}: {}", userId, e.getMessage());
             throw new StripeException("Error al guardar el método de pago: " + e.getMessage(), e);
         }
     }
@@ -112,12 +119,13 @@ public class PaymentMethodService implements IPaymentMethodService {
      */
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "userPaymentMethods", key = "#userId")
     public List<PaymentMethodDto> getUserPaymentMethods(Long userId) {
         // Verificar si el usuario existe
-        userService.getUserById(userId);
+        User user = userService.getUserById(userId);
 
-        // Obtener todos los métodos de pago del usuario
-        List<CustomerPaymentMethod> paymentMethods = paymentMethodRepository.findByUserId(userId);
+        // Obtener los métodos de pago directamente del usuario
+        List<CustomerPaymentMethod> paymentMethods = user.getPaymentMethods();
 
         // Convertir a DTOs y devolver
         return paymentMethods.stream()
@@ -130,9 +138,10 @@ public class PaymentMethodService implements IPaymentMethodService {
      */
     @Override
     @Transactional
+    @CacheEvict(value = {"defaultPaymentMethods", "userPaymentMethods"}, key = "#userId")
     public PaymentMethodDto setDefaultPaymentMethod(Long userId, Long paymentMethodId) {
         // Verificar si el usuario existe
-        userService.getUserById(userId);
+        User user = userService.getUserById(userId);
 
         // Obtener el método de pago
         CustomerPaymentMethod paymentMethod = paymentMethodRepository.findById(paymentMethodId)
@@ -144,11 +153,11 @@ public class PaymentMethodService implements IPaymentMethodService {
         }
 
         // Desactivar el método de pago predeterminado actual si existe
-        paymentMethodRepository.findByUserIdAndIsDefaultTrue(userId)
-                .ifPresent(existingDefault -> {
-                    existingDefault.setDefault(false);
-                    paymentMethodRepository.save(existingDefault);
-                });
+        CustomerPaymentMethod existingDefault = user.getDefaultPaymentMethod();
+        if (existingDefault != null) {
+            existingDefault.setDefault(false);
+            paymentMethodRepository.save(existingDefault);
+        }
 
         // Establecer el nuevo método predeterminado
         paymentMethod.setDefault(true);
@@ -162,9 +171,10 @@ public class PaymentMethodService implements IPaymentMethodService {
      */
     @Override
     @Transactional
+    @CacheEvict(value = {"defaultPaymentMethods", "userPaymentMethods"}, key = "#userId")
     public void deletePaymentMethod(Long userId, Long paymentMethodId) {
         // Verificar si el usuario existe
-        userService.getUserById(userId);
+        User user = userService.getUserById(userId);
 
         // Obtener el método de pago
         CustomerPaymentMethod paymentMethod = paymentMethodRepository.findById(paymentMethodId)
@@ -179,10 +189,16 @@ public class PaymentMethodService implements IPaymentMethodService {
             // Eliminar de Stripe (desasociar del cliente)
             PaymentMethod.retrieve(paymentMethod.getStripePaymentMethodId()).detach();
 
+            // Utilizar el método de conveniencia para quitar el método de pago del usuario
+            user.removePaymentMethod(paymentMethod);
+
             // Eliminar de nuestra base de datos
             paymentMethodRepository.delete(paymentMethod);
 
+            logger.info("Método de pago {} eliminado para usuario {}", paymentMethodId, userId);
         } catch (Exception e) {
+            logger.error("Error al eliminar método de pago {} para usuario {}: {}",
+                    paymentMethodId, userId, e.getMessage());
             throw new StripeException("Error al eliminar el método de pago: " + e.getMessage(), e);
         }
     }
@@ -192,13 +208,16 @@ public class PaymentMethodService implements IPaymentMethodService {
      */
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "defaultPaymentMethods", key = "#userId")
     public Optional<PaymentMethodDto> getDefaultPaymentMethod(Long userId) {
         // Verificar si el usuario existe
-        userService.getUserById(userId);
+        User user = userService.getUserById(userId);
 
-        // Obtener el método de pago predeterminado
-        return paymentMethodRepository.findByUserIdAndIsDefaultTrue(userId)
-                .map(this::convertToDto);
+        // Obtener el método de pago predeterminado usando el método de conveniencia
+        CustomerPaymentMethod defaultMethod = user.getDefaultPaymentMethod();
+
+        // Convertir a DTO si existe
+        return Optional.ofNullable(defaultMethod).map(this::convertToDto);
     }
 
     /**

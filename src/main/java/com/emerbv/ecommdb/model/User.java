@@ -8,16 +8,13 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.NaturalId;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 
 @Getter
 @Setter
-/*
-@AllArgsConstructor
-@NoArgsConstructor
- */
 @Entity
 public class User extends Auditable {
     @Id
@@ -46,6 +43,12 @@ public class User extends Auditable {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Order> orders;
 
+    /**
+     * Relación con los métodos de pago del usuario
+     */
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<CustomerPaymentMethod> paymentMethods = new ArrayList<>();
+
     @ManyToMany(
             fetch = FetchType.EAGER,
             cascade = { CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH }
@@ -72,5 +75,36 @@ public class User extends Auditable {
         this.lastName = lastName;
         this.email = email;
         this.password = password;
+    }
+
+    /**
+     * Método de conveniencia para añadir un método de pago
+     * @param paymentMethod El método de pago a añadir
+     * @return El método de pago añadido
+     */
+    public CustomerPaymentMethod addPaymentMethod(CustomerPaymentMethod paymentMethod) {
+        paymentMethods.add(paymentMethod);
+        paymentMethod.setUser(this);
+        return paymentMethod;
+    }
+
+    /**
+     * Método de conveniencia para quitar un método de pago
+     * @param paymentMethod El método de pago a quitar
+     */
+    public void removePaymentMethod(CustomerPaymentMethod paymentMethod) {
+        paymentMethods.remove(paymentMethod);
+        paymentMethod.setUser(null);
+    }
+
+    /**
+     * Obtiene el método de pago predeterminado del usuario
+     * @return El método de pago predeterminado o null si no existe
+     */
+    public CustomerPaymentMethod getDefaultPaymentMethod() {
+        return paymentMethods.stream()
+                .filter(CustomerPaymentMethod::isDefault)
+                .findFirst()
+                .orElse(null);
     }
 }
