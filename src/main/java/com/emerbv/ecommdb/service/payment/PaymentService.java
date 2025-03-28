@@ -2,8 +2,11 @@ package com.emerbv.ecommdb.service.payment;
 
 import com.emerbv.ecommdb.enums.OrderStatus;
 import com.emerbv.ecommdb.exceptions.ResourceNotFoundException;
+import com.emerbv.ecommdb.model.CustomerPaymentMethod;
 import com.emerbv.ecommdb.model.Order;
 import com.emerbv.ecommdb.model.PaymentTransaction;
+import com.emerbv.ecommdb.model.User;
+import com.emerbv.ecommdb.repository.CustomerPaymentMethodRepository;
 import com.emerbv.ecommdb.repository.OrderRepository;
 import com.emerbv.ecommdb.repository.PaymentTransactionRepository;
 import com.emerbv.ecommdb.request.PaymentRequest;
@@ -12,6 +15,7 @@ import com.emerbv.ecommdb.util.StripeUtils;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +29,7 @@ public class PaymentService implements IPaymentService {
 
     private final OrderRepository orderRepository;
     private final PaymentTransactionRepository transactionRepository;
+    private final CustomerPaymentMethodRepository customerPaymentMethodRepository;
     private final StripeUtils stripeUtils;
 
     @Override
@@ -60,6 +65,25 @@ public class PaymentService implements IPaymentService {
             params.put("description", paymentRequest.getDescription());
         } else {
             params.put("description", "Payment for Order #" + order.getOrderId());
+        }
+
+        if (paymentRequest.getSavedPaymentMethodId() != null) {
+            // Obtener el usuario de la orden (ya tenemos la orden)
+            User user = order.getUser();
+
+            // Obtener el método de pago guardado
+            CustomerPaymentMethod savedMethod = customerPaymentMethodRepository.findById(paymentRequest.getSavedPaymentMethodId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Método de pago no encontrado"));
+
+            // Verificar que pertenezca al usuario
+            if (!savedMethod.getUser().getId().equals(user.getId())) {
+                throw new AccessDeniedException("No autorizado para usar este método de pago");
+            }
+
+            // Usar el método de pago guardado en Stripe
+            params.put("payment_method", savedMethod.getStripePaymentMethodId());
+            params.put("customer", user.getStripeCustomerId());
+            params.put("off_session", true); // Opcional, si quieres cobrar sin interacción del usuario
         }
 
         // Crear el PaymentIntent

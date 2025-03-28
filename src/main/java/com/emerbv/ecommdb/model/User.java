@@ -29,6 +29,11 @@ public class User extends Auditable {
     private String email;
     private String password;
 
+    /**
+     * ID del cliente en Stripe, necesario para guardar métodos de pago
+     */
+    private String stripeCustomerId;
+
     //@OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private ShippingDetails shippingDetails;
