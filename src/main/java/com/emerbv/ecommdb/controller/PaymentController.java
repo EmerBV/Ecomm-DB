@@ -26,6 +26,7 @@ public class PaymentController {
     private final IPaymentService paymentService;
     private final IOrderService orderService;
 
+    /*
     @PostMapping("/checkout/order/{orderId}")
     public ResponseEntity<ApiResponse> checkoutOrder(@PathVariable Long orderId, @RequestBody PaymentRequest paymentRequest) {
         try {
@@ -41,6 +42,35 @@ public class PaymentController {
             // Crear un objeto para la respuesta que incluya tanto el intent de pago como los detalles de la orden
             Map<String, Object> responseData = new HashMap<>();
             responseData.put("paymentIntent", paymentIntentResponse);
+            responseData.put("order", orderDto);
+
+            return ResponseEntity.ok(new ApiResponse("Checkout initialized successfully", responseData));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse(e.getMessage(), null));
+        } catch (StripeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("Payment Intent creation failed", e.getMessage()));
+        }
+    }
+     */
+
+    @PostMapping("/checkout/order/{orderId}")
+    public ResponseEntity<ApiResponse> checkoutOrder(@PathVariable Long orderId, @RequestBody PaymentRequest paymentRequest) {
+        try {
+            // Asegurarse de que el orderId en el path y en el request coincidan
+            paymentRequest.setOrderId(orderId);
+
+            // Obtener información de la orden para mostrarla en la respuesta
+            OrderDto orderDto = orderService.getOrder(orderId);
+
+            // Crear el intent de pago
+            PaymentIntentResponse paymentIntentResponse = paymentService.createPaymentIntent(paymentRequest);
+
+            // MODIFICACIÓN: Crear un mapa con la estructura esperada por el cliente
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("clientSecret", paymentIntentResponse.getClientSecret());
+            responseData.put("paymentIntentId", paymentIntentResponse.getPaymentIntentId());
             responseData.put("order", orderDto);
 
             return ResponseEntity.ok(new ApiResponse("Checkout initialized successfully", responseData));

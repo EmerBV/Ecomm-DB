@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -42,48 +43,39 @@ public class PaymentService implements IPaymentService {
         // Convertir el monto al formato de Stripe (centavos/peniques)
         Long amount = stripeUtils.convertAmountToStripeFormat(order.getTotalAmount());
 
-        // Crear los parámetros para Stripe PaymentIntent
+        // Crear PaymentIntent con configuración básica primero
         Map<String, Object> params = new HashMap<>();
         params.put("amount", amount);
         params.put("currency", paymentRequest.getCurrency() != null ? paymentRequest.getCurrency() : "usd");
 
+        // Configuración específica para aplicaciones móviles
+        // Esta configuración evita métodos de pago que requieren redirección
+        Map<String, Object> paymentMethodOptions = new HashMap<>();
+        Map<String, Object> cardOptions = new HashMap<>();
+        cardOptions.put("request_three_d_secure", "automatic");
+        paymentMethodOptions.put("card", cardOptions);
+        params.put("payment_method_options", paymentMethodOptions);
+
+        // Solo permitir tarjetas como método de pago
+        List<String> paymentMethodTypes = List.of("card");
+        params.put("payment_method_types", paymentMethodTypes);
+
+        // Metadatos para referencia
         Map<String, String> metadata = new HashMap<>();
         metadata.put("orderId", order.getOrderId().toString());
         params.put("metadata", metadata);
 
-        if (paymentRequest.getPaymentMethodId() != null) {
-            params.put("payment_method", paymentRequest.getPaymentMethodId());
-            params.put("confirm", true);
-            params.put("confirmation_method", "manual");
-        }
+        // Descripción del pago
+        params.put("description", "Payment for Order #" + order.getOrderId());
 
+        // Si se proporciona email para recibo
         if (paymentRequest.getReceiptEmail() != null) {
             params.put("receipt_email", paymentRequest.getReceiptEmail());
         }
 
-        if (paymentRequest.getDescription() != null) {
-            params.put("description", paymentRequest.getDescription());
-        } else {
-            params.put("description", "Payment for Order #" + order.getOrderId());
-        }
-
-        if (paymentRequest.getSavedPaymentMethodId() != null) {
-            // Obtener el usuario de la orden (ya tenemos la orden)
-            User user = order.getUser();
-
-            // Obtener el método de pago guardado
-            CustomerPaymentMethod savedMethod = customerPaymentMethodRepository.findById(paymentRequest.getSavedPaymentMethodId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Método de pago no encontrado"));
-
-            // Verificar que pertenezca al usuario
-            if (!savedMethod.getUser().getId().equals(user.getId())) {
-                throw new AccessDeniedException("No autorizado para usar este método de pago");
-            }
-
-            // Usar el método de pago guardado en Stripe
-            params.put("payment_method", savedMethod.getStripePaymentMethodId());
-            params.put("customer", user.getStripeCustomerId());
-            params.put("off_session", true); // Opcional, si quieres cobrar sin interacción del usuario
+        // Si se proporciona un método de pago específico
+        if (paymentRequest.getPaymentMethodId() != null) {
+            params.put("payment_method", paymentRequest.getPaymentMethodId());
         }
 
         // Crear el PaymentIntent
