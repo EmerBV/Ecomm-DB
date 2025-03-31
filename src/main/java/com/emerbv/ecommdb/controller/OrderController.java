@@ -3,6 +3,7 @@ package com.emerbv.ecommdb.controller;
 import com.emerbv.ecommdb.dto.OrderDto;
 import com.emerbv.ecommdb.exceptions.ResourceNotFoundException;
 import com.emerbv.ecommdb.model.Order;
+import com.emerbv.ecommdb.request.OrderStatusRequest;
 import com.emerbv.ecommdb.response.ApiResponse;
 import com.emerbv.ecommdb.service.order.IOrderService;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +48,21 @@ public class OrderController {
             return ResponseEntity.ok(new ApiResponse("Get User Order Success!", order));
         } catch (ResourceNotFoundException e) {
             return  ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiResponse("Oops!", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{orderId}/status")
+    public ResponseEntity<ApiResponse> updateOrderStatus(
+            @PathVariable Long orderId,
+            @RequestBody OrderStatusRequest statusRequest
+    ) {
+        try {
+            Order updatedOrder = orderService.updateOrderStatus(orderId, statusRequest.getStatus());
+            OrderDto orderDto = orderService.convertToDto(updatedOrder);
+            return ResponseEntity.ok(new ApiResponse("Order Status Updated Successfully", orderDto));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse("Oops!", e.getMessage()));
         }
     }
 }

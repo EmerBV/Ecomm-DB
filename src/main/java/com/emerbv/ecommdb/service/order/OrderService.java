@@ -171,4 +171,15 @@ public class OrderService implements IOrderService {
 
         return orderDto;
     }
+
+    @Override
+    @Transactional
+    public Order updateOrderStatus(Long orderId, OrderStatus status) {
+        return orderRepository.findById(orderId)
+                .map(order -> {
+                    order.setOrderStatus(status);
+                    return orderRepository.save(order);
+                })
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+    }
 }
