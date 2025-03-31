@@ -73,9 +73,9 @@ public class StripeWebhookService {
         String orderId = paymentIntent.getMetadata().get("orderId");
         if (orderId != null) {
             orderRepository.findById(Long.valueOf(orderId)).ifPresent(order -> {
-                order.setOrderStatus(OrderStatus.PROCESSING);
+                order.setOrderStatus(OrderStatus.PAID);
                 orderRepository.save(order);
-                logger.info("Order {} updated to PROCESSING", orderId);
+                logger.info("Order {} updated to PAID", orderId);
 
                 // Actualizar o crear la transacción de pago
                 updatePaymentTransaction(paymentIntent, order, "succeeded", null);

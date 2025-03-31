@@ -77,9 +77,9 @@ public class PaymentStatusUpdater {
         }
 
         if ("succeeded".equals(newStatus)) {
-            // Si el pago fue exitoso, actualizar la orden a procesando
-            transaction.getOrder().setOrderStatus(OrderStatus.PROCESSING);
-            logger.info("Updated order {} to PROCESSING based on succeeded payment",
+            // Si el pago fue exitoso, actualizar la orden a PAID
+            transaction.getOrder().setOrderStatus(OrderStatus.PAID);
+            logger.info("Updated order {} to PAID based on succeeded payment",
                     transaction.getOrder().getOrderId());
         } else if ("canceled".equals(newStatus)) {
             // Si el pago fue cancelado, cancelar la orden

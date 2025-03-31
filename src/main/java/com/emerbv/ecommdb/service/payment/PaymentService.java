@@ -81,9 +81,8 @@ public class PaymentService implements IPaymentService {
         // Crear el PaymentIntent
         PaymentIntent intent = PaymentIntent.create(params);
 
-        // Actualizar el estado de la orden
-        order.setOrderStatus(OrderStatus.PROCESSING);
-        orderRepository.save(order);
+        // La orden permanece en PENDING hasta que el pago sea confirmado
+        // No cambiamos el estado aquí, sino que esperamos la confirmación de Stripe
 
         // Guardar la transacción de pago
         PaymentTransaction transaction = new PaymentTransaction(
@@ -111,7 +110,7 @@ public class PaymentService implements IPaymentService {
             String orderId = confirmedIntent.getMetadata().get("orderId");
             if (orderId != null) {
                 orderRepository.findById(Long.valueOf(orderId)).ifPresent(order -> {
-                    order.setOrderStatus(OrderStatus.PROCESSING);
+                    order.setOrderStatus(OrderStatus.PAID);
                     orderRepository.save(order);
 
                     // Actualizar la transacción de pago
