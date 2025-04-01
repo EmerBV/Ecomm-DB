@@ -6,6 +6,8 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class StripeUtils {
@@ -84,5 +86,42 @@ public class StripeUtils {
                         (intent.getLastPaymentError().getMessage() != null ?
                                 intent.getLastPaymentError().getMessage() : errorCode);
         }
+    }
+
+    /**
+     * Convierte un PaymentIntent de Stripe a un mapa serializable
+     */
+    public Map<String, Object> convertPaymentIntentToMap(PaymentIntent intent) {
+        Map<String, Object> result = new HashMap<>();
+
+        // Datos básicos
+        result.put("id", intent.getId());
+        result.put("status", intent.getStatus());
+        result.put("amount", convertAmountFromStripeFormat(intent.getAmount()));
+        result.put("currency", intent.getCurrency());
+        result.put("clientSecret", intent.getClientSecret());
+        result.put("paymentMethod", intent.getPaymentMethod());
+
+        // Metadatos si existen
+        if (intent.getMetadata() != null && !intent.getMetadata().isEmpty()) {
+            result.put("metadata", intent.getMetadata());
+        }
+
+        // Información de error si existe
+        if (intent.getLastPaymentError() != null) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("code", intent.getLastPaymentError().getCode());
+            error.put("message", intent.getLastPaymentError().getMessage());
+            error.put("type", intent.getLastPaymentError().getType());
+            result.put("error", error);
+        }
+
+        // Información sobre el estado
+        result.put("requiresAction", "requires_action".equals(intent.getStatus()));
+        result.put("requiresConfirmation", "requires_confirmation".equals(intent.getStatus()));
+        result.put("canceled", "canceled".equals(intent.getStatus()));
+        result.put("succeeded", "succeeded".equals(intent.getStatus()));
+
+        return result;
     }
 }

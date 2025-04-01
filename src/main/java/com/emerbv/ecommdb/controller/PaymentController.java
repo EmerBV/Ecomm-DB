@@ -8,6 +8,7 @@ import com.emerbv.ecommdb.response.PaymentIntentResponse;
 import com.emerbv.ecommdb.service.order.IOrderService;
 import com.emerbv.ecommdb.service.payment.IPaymentService;
 import com.emerbv.ecommdb.service.payment.StripeWebhookService;
+import com.emerbv.ecommdb.util.StripeUtils;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class PaymentController {
 
     private final IPaymentService paymentService;
     private final IOrderService orderService;
+    private final StripeUtils stripeUtils;
 
     /*
     @PostMapping("/checkout/order/{orderId}")
@@ -101,7 +103,11 @@ public class PaymentController {
     public ResponseEntity<ApiResponse> confirmPayment(@PathVariable String paymentIntentId) {
         try {
             PaymentIntent confirmedIntent = paymentService.confirmPayment(paymentIntentId);
-            return ResponseEntity.ok(new ApiResponse("Payment confirmed successfully", confirmedIntent));
+
+            // Usar StripeUtils para convertir el PaymentIntent a un mapa serializable
+            Map<String, Object> paymentData = stripeUtils.convertPaymentIntentToMap(confirmedIntent);
+
+            return ResponseEntity.ok(new ApiResponse("Payment confirmed successfully", paymentData));
         } catch (StripeException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse("Payment confirmation failed", e.getMessage()));
@@ -112,7 +118,10 @@ public class PaymentController {
     public ResponseEntity<ApiResponse> cancelPayment(@PathVariable String paymentIntentId) {
         try {
             PaymentIntent canceledIntent = paymentService.cancelPayment(paymentIntentId);
-            return ResponseEntity.ok(new ApiResponse("Payment canceled successfully", canceledIntent));
+
+            Map<String, Object> paymentData = stripeUtils.convertPaymentIntentToMap(canceledIntent);
+
+            return ResponseEntity.ok(new ApiResponse("Payment canceled successfully", paymentData));
         } catch (StripeException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse("Payment cancellation failed", e.getMessage()));
@@ -123,7 +132,10 @@ public class PaymentController {
     public ResponseEntity<ApiResponse> retrievePayment(@PathVariable String paymentIntentId) {
         try {
             PaymentIntent intent = paymentService.retrievePayment(paymentIntentId);
-            return ResponseEntity.ok(new ApiResponse("Payment intent retrieved successfully", intent));
+
+            Map<String, Object> paymentData = stripeUtils.convertPaymentIntentToMap(intent);
+
+            return ResponseEntity.ok(new ApiResponse("Payment intent retrieved successfully", paymentData));
         } catch (StripeException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse("Failed to retrieve payment intent", e.getMessage()));
