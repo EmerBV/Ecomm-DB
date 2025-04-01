@@ -9,6 +9,7 @@ import com.emerbv.ecommdb.service.order.IOrderService;
 import com.emerbv.ecommdb.service.payment.IPaymentService;
 import com.emerbv.ecommdb.service.payment.StripeWebhookService;
 import com.emerbv.ecommdb.util.StripeUtils;
+import com.stripe.exception.CardException;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
 import lombok.RequiredArgsConstructor;
@@ -80,8 +81,24 @@ public class PaymentController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(new ApiResponse(e.getMessage(), null));
         } catch (StripeException e) {
+            // Obtener detalles más específicos del error de Stripe
+            String errorMessage = "Payment Intent creation failed";
+            String errorDetails = e.getMessage();
+
+            if (e instanceof CardException) {
+                CardException cardException = (CardException) e;
+                errorMessage = "Card error: " + cardException.getCode();
+                errorDetails = cardException.getDeclineCode() != null ?
+                        "Decline code: " + cardException.getDeclineCode() : errorDetails;
+            }
+
+            Map<String, Object> errorData = new HashMap<>();
+            errorData.put("message", errorMessage);
+            errorData.put("details", errorDetails);
+            errorData.put("code", e.getCode());
+
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse("Payment Intent creation failed", e.getMessage()));
+                    .body(new ApiResponse(errorMessage, errorData));
         }
     }
 

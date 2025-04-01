@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -36,27 +37,60 @@ public class PaymentService implements IPaymentService {
     @Override
     @Transactional
     public PaymentIntentResponse createPaymentIntent(PaymentRequest paymentRequest) throws StripeException {
-        // Obtener el orden que queremos pagar
+        // Obtener la orden que queremos pagar
         Order order = orderRepository.findById(paymentRequest.getOrderId())
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + paymentRequest.getOrderId()));
+
+        // Verificar si la orden ya está pagada
+        if (OrderStatus.PAID.equals(order.getOrderStatus())) {
+            throw new com.emerbv.ecommdb.exceptions.StripeException("Order is already paid");
+        }
+
+        // Buscar si ya existe una transacción para esta orden
+        Optional<PaymentTransaction> existingTransaction = transactionRepository.findByOrderOrderId(order.getOrderId())
+                .stream()
+                .filter(t -> !"canceled".equals(t.getStatus()))
+                .findFirst();
+
+        // Si existe una transacción activa, usamos ese PaymentIntent
+        if (existingTransaction.isPresent() &&
+                !("canceled".equals(existingTransaction.get().getStatus()) ||
+                        "failed".equals(existingTransaction.get().getStatus()))) {
+
+            // Verificar con Stripe el estado actual
+            try {
+                PaymentIntent existingIntent = PaymentIntent.retrieve(existingTransaction.get().getPaymentIntentId());
+
+                // Si el intent no está cancelado o fallido, podemos reutilizarlo
+                if (!"canceled".equals(existingIntent.getStatus()) &&
+                        !"failed".equals(existingIntent.getStatus())) {
+
+                    return new PaymentIntentResponse(existingIntent.getClientSecret(), existingIntent.getId());
+                }
+            } catch (Exception e) {
+                // Si hay algún error al recuperar el intent, procedemos a crear uno nuevo
+                // Solo registramos el error para diagnóstico
+                System.err.println("Error retrieving existing payment intent: " + e.getMessage());
+            }
+        }
+
+        // Si llegamos aquí, necesitamos crear un nuevo PaymentIntent
 
         // Convertir el monto al formato de Stripe (centavos/peniques)
         Long amount = stripeUtils.convertAmountToStripeFormat(order.getTotalAmount());
 
-        // Crear PaymentIntent con configuración básica primero
+        // Crear PaymentIntent con configuración básica
         Map<String, Object> params = new HashMap<>();
         params.put("amount", amount);
         params.put("currency", paymentRequest.getCurrency() != null ? paymentRequest.getCurrency() : "usd");
 
-        // Configuración específica para aplicaciones móviles
-        // Esta configuración evita métodos de pago que requieren redirección
+        // Configuración para métodos de pago
         Map<String, Object> paymentMethodOptions = new HashMap<>();
         Map<String, Object> cardOptions = new HashMap<>();
         cardOptions.put("request_three_d_secure", "automatic");
         paymentMethodOptions.put("card", cardOptions);
         params.put("payment_method_options", paymentMethodOptions);
 
-        // Solo permitir tarjetas como método de pago
         List<String> paymentMethodTypes = List.of("card");
         params.put("payment_method_types", paymentMethodTypes);
 
@@ -65,24 +99,18 @@ public class PaymentService implements IPaymentService {
         metadata.put("orderId", order.getOrderId().toString());
         params.put("metadata", metadata);
 
-        // Descripción del pago
         params.put("description", "Payment for Order #" + order.getOrderId());
 
-        // Si se proporciona email para recibo
         if (paymentRequest.getReceiptEmail() != null) {
             params.put("receipt_email", paymentRequest.getReceiptEmail());
         }
 
-        // Si se proporciona un método de pago específico
         if (paymentRequest.getPaymentMethodId() != null) {
             params.put("payment_method", paymentRequest.getPaymentMethodId());
         }
 
         // Crear el PaymentIntent
         PaymentIntent intent = PaymentIntent.create(params);
-
-        // La orden permanece en PENDING hasta que el pago sea confirmado
-        // No cambiamos el estado aquí, sino que esperamos la confirmación de Stripe
 
         // Guardar la transacción de pago
         PaymentTransaction transaction = new PaymentTransaction(
