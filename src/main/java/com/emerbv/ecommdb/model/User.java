@@ -32,7 +32,7 @@ public class User extends Auditable {
     private String stripeCustomerId;
 
     //@OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ShippingDetails> shippingDetails = new ArrayList<>();
 
     //@OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -78,6 +78,37 @@ public class User extends Auditable {
     }
 
     /**
+     * Método de conveniencia para añadir una dirección de envío
+     * @param shippingDetails La dirección de envío a añadir
+     * @return La dirección de envío añadida
+     */
+    public ShippingDetails addShippingDetails(ShippingDetails shippingDetails) {
+        this.shippingDetails.add(shippingDetails);
+        shippingDetails.setUser(this);
+        return shippingDetails;
+    }
+
+    /**
+     * Método de conveniencia para quitar una dirección de envío
+     * @param shippingDetails La dirección de envío a quitar
+     */
+    public void removeShippingDetails(ShippingDetails shippingDetails) {
+        this.shippingDetails.remove(shippingDetails);
+        shippingDetails.setUser(null);
+    }
+
+    /**
+     * Obtiene la dirección de envío predeterminada del usuario
+     * @return La dirección de envío predeterminada o null si no existe
+     */
+    public ShippingDetails getDefaultShippingDetails() {
+        return shippingDetails.stream()
+                .filter(ShippingDetails::isDefault)
+                .findFirst()
+                .orElse(shippingDetails.isEmpty() ? null : shippingDetails.get(0));
+    }
+
+    /**
      * Método de conveniencia para añadir un método de pago
      * @param paymentMethod El método de pago a añadir
      * @return El método de pago añadido
@@ -107,4 +138,5 @@ public class User extends Auditable {
                 .findFirst()
                 .orElse(null);
     }
+
 }

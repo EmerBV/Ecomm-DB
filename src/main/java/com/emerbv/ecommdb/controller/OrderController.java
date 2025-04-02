@@ -22,11 +22,28 @@ public class OrderController {
     @PostMapping("/user/place-order")
     public ResponseEntity<ApiResponse> createOrder(@RequestParam Long userId) {
         try {
-            Order order =  orderService.placeOrder(userId);
-            OrderDto orderDto =  orderService.convertToDto(order);
+            Order order = orderService.placeOrder(userId);
+            OrderDto orderDto = orderService.convertToDto(order);
             return ResponseEntity.ok(new ApiResponse("Create Order Success!", orderDto));
         } catch (Exception e) {
-            return  ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("Error occurred!", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/user/place-order-with-address")
+    public ResponseEntity<ApiResponse> createOrderWithAddress(
+            @RequestParam Long userId,
+            @RequestParam Long shippingAddressId) {
+        try {
+            Order order = orderService.placeOrderWithShippingAddress(userId, shippingAddressId);
+            OrderDto orderDto = orderService.convertToDto(order);
+            return ResponseEntity.ok(new ApiResponse("Create Order Success!", orderDto));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse("Shipping address not found!", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse("Error occurred!", e.getMessage()));
         }
     }
@@ -37,7 +54,7 @@ public class OrderController {
             OrderDto order = orderService.getOrder(orderId);
             return ResponseEntity.ok(new ApiResponse("Get Order Success!", order));
         } catch (ResourceNotFoundException e) {
-            return  ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiResponse("Oops!", e.getMessage()));
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiResponse("Oops!", e.getMessage()));
         }
     }
 
@@ -47,7 +64,7 @@ public class OrderController {
             List<OrderDto> order = orderService.getUserOrders(userId);
             return ResponseEntity.ok(new ApiResponse("Get User Order Success!", order));
         } catch (ResourceNotFoundException e) {
-            return  ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiResponse("Oops!", e.getMessage()));
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiResponse("Oops!", e.getMessage()));
         }
     }
 

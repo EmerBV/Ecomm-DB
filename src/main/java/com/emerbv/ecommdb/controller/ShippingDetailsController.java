@@ -12,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @RequiredArgsConstructor
@@ -27,7 +29,7 @@ public class ShippingDetailsController {
             @RequestParam Long userId
     ) {
         try {
-            User user = userService.getUserById(userId); // Obtener el usuario
+            User user = userService.getUserById(userId);
             ShippingDetails updatedDetails = shippingService.addOrUpdateShippingDetails(request, user);
             return ResponseEntity.ok(new ApiResponse("Shipping details updated successfully", updatedDetails));
         } catch (ResourceNotFoundException e) {
@@ -37,11 +39,47 @@ public class ShippingDetailsController {
 
     @GetMapping("/{userId}")
     public ResponseEntity<ApiResponse> getShippingDetails(@PathVariable Long userId) {
-        ShippingDetails shippingDetails = shippingService.getShippingDetailsByUserId(userId);
-        if (shippingDetails == null) {
+        List<ShippingDetails> shippingDetails = shippingService.getShippingDetailsByUserId(userId);
+        if (shippingDetails.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(new ApiResponse("No shipping details found", null));
         }
         return ResponseEntity.ok(new ApiResponse("Shipping details retrieved successfully", shippingDetails));
+    }
+
+    @GetMapping("/{userId}/default")
+    public ResponseEntity<ApiResponse> getDefaultShippingDetails(@PathVariable Long userId) {
+        ShippingDetails defaultDetails = shippingService.getDefaultShippingDetails(userId);
+        if (defaultDetails == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiResponse("No default shipping details found", null));
+        }
+        return ResponseEntity.ok(new ApiResponse("Default shipping details retrieved successfully", defaultDetails));
+    }
+
+    @PutMapping("/{userId}/address/{addressId}/default")
+    public ResponseEntity<ApiResponse> setDefaultShippingAddress(
+            @PathVariable Long userId,
+            @PathVariable Long addressId
+    ) {
+        try {
+            ShippingDetails defaultAddress = shippingService.setDefaultShippingAddress(userId, addressId);
+            return ResponseEntity.ok(new ApiResponse("Default shipping address updated successfully", defaultAddress));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(NOT_FOUND).body(new ApiResponse(e.getMessage(), null));
+        }
+    }
+
+    @DeleteMapping("/{userId}/address/{addressId}")
+    public ResponseEntity<ApiResponse> deleteShippingAddress(
+            @PathVariable Long userId,
+            @PathVariable Long addressId
+    ) {
+        try {
+            shippingService.deleteShippingAddress(userId, addressId);
+            return ResponseEntity.ok(new ApiResponse("Shipping address deleted successfully", null));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(NOT_FOUND).body(new ApiResponse(e.getMessage(), null));
+        }
     }
 }

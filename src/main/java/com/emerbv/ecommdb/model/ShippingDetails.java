@@ -26,7 +26,7 @@ public class ShippingDetails {
     private boolean isDefault;
 
     @JsonIgnore
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
 }

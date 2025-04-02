@@ -22,8 +22,19 @@ public class Order {
     private Long orderId;
     private LocalDate orderDate;
     private BigDecimal totalAmount;
+
+    // Campos para la dirección de envío
+    private String shippingAddress;
+    private String shippingCity;
+    private String shippingState;
+    private String shippingPostalCode;
+    private String shippingCountry;
+    private String shippingPhoneNumber;
+    private String shippingFullName;
+
     @Enumerated(EnumType.STRING)
     private OrderStatus orderStatus;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<OrderItem> orderItems = new HashSet<>();
 

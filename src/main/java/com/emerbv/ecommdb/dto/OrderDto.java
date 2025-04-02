@@ -13,5 +13,15 @@ public class OrderDto {
     private LocalDate orderDate;
     private BigDecimal totalAmount;
     private String status;
+
+    // Información de la dirección de envío
+    private String shippingAddress;
+    private String shippingCity;
+    private String shippingState;
+    private String shippingPostalCode;
+    private String shippingCountry;
+    private String shippingPhoneNumber;
+    private String shippingFullName;
+
     private List<OrderItemDto> items;
 }

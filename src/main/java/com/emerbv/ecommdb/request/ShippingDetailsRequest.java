@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class ShippingDetailsRequest {
+    private Long id;
     private String address;
     private String city;
     private String state;
@@ -11,4 +12,5 @@ public class ShippingDetailsRequest {
     private String country;
     private String phoneNumber;
     private String fullName;
+    private boolean isDefault;
 }

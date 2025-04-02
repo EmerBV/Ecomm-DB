@@ -9,6 +9,7 @@ import com.emerbv.ecommdb.repository.OrderRepository;
 import com.emerbv.ecommdb.repository.ProductRepository;
 import com.emerbv.ecommdb.repository.VariantRepository;
 import com.emerbv.ecommdb.service.cart.CartService;
+import com.emerbv.ecommdb.service.shipping.ShippingService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ public class OrderService implements IOrderService {
     private final ProductRepository productRepository;
     private final VariantRepository variantRepository;
     private final CartService cartService;
+    private final ShippingService shippingService;
     private final ModelMapper modelMapper;
 
     @Transactional
@@ -34,6 +36,61 @@ public class OrderService implements IOrderService {
     public Order placeOrder(Long userId) {
         Cart cart = cartService.getCartByUserId(userId);
         Order order = createOrder(cart);
+
+        // Obtener la dirección de envío predeterminada
+        ShippingDetails shippingDetails = shippingService.getDefaultShippingDetails(userId);
+        if (shippingDetails != null) {
+            order.setShippingAddress(shippingDetails.getAddress());
+            order.setShippingCity(shippingDetails.getCity());
+            order.setShippingState(shippingDetails.getState());
+            order.setShippingPostalCode(shippingDetails.getPostalCode());
+            order.setShippingCountry(shippingDetails.getCountry());
+            order.setShippingPhoneNumber(shippingDetails.getPhoneNumber());
+            order.setShippingFullName(shippingDetails.getFullName());
+        }
+
+        List<OrderItem> orderItemList = createOrderItems(order, cart);
+        order.setOrderItems(new HashSet<>(orderItemList));
+        order.setTotalAmount(calculateTotalAmount(orderItemList));
+        Order savedOrder = orderRepository.save(order);
+        cartService.clearCart(cart.getId());
+        return savedOrder;
+    }
+
+    @Transactional
+    @Override
+    public Order placeOrderWithShippingAddress(Long userId, Long shippingAddressId) {
+        Cart cart = cartService.getCartByUserId(userId);
+        Order order = createOrder(cart);
+
+        // Intentar obtener la dirección específica
+        try {
+            ShippingDetails shippingDetails = shippingService.getShippingDetailsByUserId(userId).stream()
+                    .filter(address -> address.getId().equals(shippingAddressId))
+                    .findFirst()
+                    .orElseThrow(() -> new ResourceNotFoundException("Shipping address not found"));
+
+            order.setShippingAddress(shippingDetails.getAddress());
+            order.setShippingCity(shippingDetails.getCity());
+            order.setShippingState(shippingDetails.getState());
+            order.setShippingPostalCode(shippingDetails.getPostalCode());
+            order.setShippingCountry(shippingDetails.getCountry());
+            order.setShippingPhoneNumber(shippingDetails.getPhoneNumber());
+            order.setShippingFullName(shippingDetails.getFullName());
+        } catch (ResourceNotFoundException e) {
+            // Si no se encuentra la dirección, intentar con la predeterminada
+            ShippingDetails defaultShipping = shippingService.getDefaultShippingDetails(userId);
+            if (defaultShipping != null) {
+                order.setShippingAddress(defaultShipping.getAddress());
+                order.setShippingCity(defaultShipping.getCity());
+                order.setShippingState(defaultShipping.getState());
+                order.setShippingPostalCode(defaultShipping.getPostalCode());
+                order.setShippingCountry(defaultShipping.getCountry());
+                order.setShippingPhoneNumber(defaultShipping.getPhoneNumber());
+                order.setShippingFullName(defaultShipping.getFullName());
+            }
+        }
+
         List<OrderItem> orderItemList = createOrderItems(order, cart);
         order.setOrderItems(new HashSet<>(orderItemList));
         order.setTotalAmount(calculateTotalAmount(orderItemList));
@@ -52,6 +109,7 @@ public class OrderService implements IOrderService {
         return order;
     }
 
+    // Resto del código permanece igual
     private List<OrderItem> createOrderItems(Order order, Cart cart) {
         return cart.getItems().stream().map(cartItem -> {
             Product product = cartItem.getProduct();
