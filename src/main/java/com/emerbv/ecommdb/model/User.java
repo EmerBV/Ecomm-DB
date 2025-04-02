@@ -33,7 +33,7 @@ public class User extends Auditable {
 
     //@OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private ShippingDetails shippingDetails;
+    private List<ShippingDetails> shippingDetails = new ArrayList<>();
 
     //@OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)

@@ -23,6 +23,7 @@ public class ShippingDetails {
     private String country;
     private String phoneNumber;
     private String fullName;
+    private boolean isDefault;
 
     @JsonIgnore
     @OneToOne
