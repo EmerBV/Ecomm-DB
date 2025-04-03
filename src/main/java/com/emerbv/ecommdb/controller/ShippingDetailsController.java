@@ -34,6 +34,9 @@ public class ShippingDetailsController {
             return ResponseEntity.ok(new ApiResponse("Shipping details updated successfully", updatedDetails));
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.status(NOT_FOUND).body(new ApiResponse(e.getMessage(), null));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("An unexpected error occurred", e.getMessage()));
         }
     }
 

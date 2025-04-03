@@ -9,6 +9,7 @@ import com.emerbv.ecommdb.repository.UserRepository;
 import com.emerbv.ecommdb.request.ShippingDetailsRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -26,13 +27,18 @@ public class ShippingService implements IShippingService {
         try {
             // Si se está actualizando una dirección existente
             if (request.getId() != null) {
-                return shippingDetailsRepository.findById(request.getId())
-                        .filter(details -> details.getUser().getId().equals(user.getId()))
-                        .map(existingDetails -> {
-                            updateShippingDetailsFields(existingDetails, request);
-                            return shippingDetailsRepository.save(existingDetails);
-                        })
-                        .orElseThrow(() -> new ResourceNotFoundException("Shipping details not found or not owned by this user"));
+                ShippingDetails existingDetails = shippingDetailsRepository.findById(request.getId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Shipping details not found with id: " + request.getId()));
+
+                // Luego verificamos si el usuario es propietario
+                if (!existingDetails.getUser().getId().equals(user.getId())) {
+                    throw new AccessDeniedException("You don't have permission to update this shipping address");
+                }
+
+                // Si todo está bien, actualizamos
+                updateShippingDetailsFields(existingDetails, request);
+
+                return shippingDetailsRepository.save(existingDetails);
             }
 
             // Si es una nueva dirección
@@ -49,20 +55,34 @@ public class ShippingService implements IShippingService {
 
             return shippingDetailsRepository.save(newDetails);
         } catch (Exception e) {
-            // Loggear el error
-            System.err.println("Error saving shipping details: " + e.getMessage());
             throw e; // Re-lanzar para manejarlo en el controlador
         }
     }
 
     private void updateShippingDetailsFields(ShippingDetails details, ShippingDetailsRequest request) {
-        details.setAddress(request.getAddress());
-        details.setCity(request.getCity());
-        details.setState(request.getState());
-        details.setPostalCode(request.getPostalCode());
-        details.setCountry(request.getCountry());
-        details.setPhoneNumber(request.getPhoneNumber());
-        details.setFullName(request.getFullName());
+        // Solo actualizar campos que no sean nulos
+        if (request.getAddress() != null) {
+            details.setAddress(request.getAddress());
+        }
+        if (request.getCity() != null) {
+            details.setCity(request.getCity());
+        }
+        if (request.getState() != null) {
+            details.setState(request.getState());
+        }
+        if (request.getPostalCode() != null) {
+            details.setPostalCode(request.getPostalCode());
+        }
+        if (request.getCountry() != null) {
+            details.setCountry(request.getCountry());
+        }
+        if (request.getPhoneNumber() != null) {
+            details.setPhoneNumber(request.getPhoneNumber());
+        }
+        if (request.getFullName() != null) {
+            details.setFullName(request.getFullName());
+        }
+        // Siempre actualizar el flag isDefault ya que es un booleano primitivo
         details.setDefault(request.isDefault());
     }
 
