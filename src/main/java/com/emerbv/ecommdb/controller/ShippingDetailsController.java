@@ -85,4 +85,17 @@ public class ShippingDetailsController {
             return ResponseEntity.status(NOT_FOUND).body(new ApiResponse(e.getMessage(), null));
         }
     }
+
+    @GetMapping("/{userId}/address/{addressId}")
+    public ResponseEntity<ApiResponse> getShippingAddressById(
+            @PathVariable Long userId,
+            @PathVariable Long addressId
+    ) {
+        try {
+            ShippingDetails shippingDetails = shippingService.getShippingAddressById(userId, addressId);
+            return ResponseEntity.ok(new ApiResponse("Shipping address retrieved successfully", shippingDetails));
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.status(NOT_FOUND).body(new ApiResponse(e.getMessage(), null));
+        }
+    }
 }

@@ -135,6 +135,13 @@ public class ShippingService implements IShippingService {
         }
     }
 
+    @Override
+    public ShippingDetails getShippingAddressById(Long userId, Long addressId) {
+        return shippingDetailsRepository.findById(addressId)
+                .filter(address -> address.getUser().getId().equals(userId))
+                .orElseThrow(() -> new ResourceNotFoundException("Shipping address not found or not owned by this user"));
+    }
+
     private void setAllShippingDetailsNonDefault(Long userId) {
         List<ShippingDetails> allAddresses = shippingDetailsRepository.findByUserId(userId);
         allAddresses.forEach(address -> address.setDefault(false));

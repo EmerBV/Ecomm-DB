@@ -12,4 +12,5 @@ public interface IShippingService {
     ShippingDetails getDefaultShippingDetails(Long userId);
     ShippingDetails setDefaultShippingAddress(Long userId, Long addressId);
     void deleteShippingAddress(Long userId, Long addressId);
+    ShippingDetails getShippingAddressById(Long userId, Long addressId);
 }
