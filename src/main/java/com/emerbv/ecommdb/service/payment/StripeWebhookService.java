@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +29,7 @@ public class StripeWebhookService {
     @Value("${stripe.webhook.secret}")
     private String endpointSecret;
 
+    @Transactional
     public void processWebhookEvent(String payload, String signatureHeader) {
         if (endpointSecret == null || endpointSecret.isEmpty()) {
             logger.warn("Stripe webhook secret not configured");
@@ -68,14 +70,22 @@ public class StripeWebhookService {
         }
     }
 
+    @Transactional
     private void handlePaymentIntentSucceeded(PaymentIntent paymentIntent) {
         logger.info("Payment succeeded: {}", paymentIntent.getId());
         String orderId = paymentIntent.getMetadata().get("orderId");
         if (orderId != null) {
             orderRepository.findById(Long.valueOf(orderId)).ifPresent(order -> {
+                // Actualizar estado de la orden
                 order.setOrderStatus(OrderStatus.PAID);
+
+                // Actualizar información de pago en la orden
+                order.setPaymentMethod(paymentIntent.getPaymentMethod());
+                order.setPaymentIntentId(paymentIntent.getId());
+
                 orderRepository.save(order);
-                logger.info("Order {} updated to PAID", orderId);
+                logger.info("Order {} updated to PAID with payment method {} and intent {}",
+                        orderId, paymentIntent.getPaymentMethod(), paymentIntent.getId());
 
                 // Actualizar o crear la transacción de pago
                 updatePaymentTransaction(paymentIntent, order, "succeeded", null);
@@ -83,6 +93,7 @@ public class StripeWebhookService {
         }
     }
 
+    @Transactional
     private void handlePaymentIntentFailed(PaymentIntent paymentIntent) {
         logger.info("Payment failed: {}", paymentIntent.getId());
         String orderId = paymentIntent.getMetadata().get("orderId");
@@ -99,6 +110,7 @@ public class StripeWebhookService {
         }
     }
 
+    @Transactional
     private void handlePaymentIntentCanceled(PaymentIntent paymentIntent) {
         logger.info("Payment canceled: {}", paymentIntent.getId());
         String orderId = paymentIntent.getMetadata().get("orderId");

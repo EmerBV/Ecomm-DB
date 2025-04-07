@@ -12,8 +12,11 @@ import com.emerbv.ecommdb.repository.VariantRepository;
 import com.emerbv.ecommdb.service.cart.CartService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,6 +25,8 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class OrderService implements IOrderService {
+    private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
+
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final VariantRepository variantRepository;
@@ -164,6 +169,7 @@ public class OrderService implements IOrderService {
 
         // Incluir información de la dirección de envío en el DTO
         if (order.getShippingDetails() != null) {
+            orderDto.setShippingDetailsId(order.getShippingDetails().getId());
             orderDto.setShippingAddress(order.getShippingDetails().getAddress());
             orderDto.setShippingCity(order.getShippingDetails().getCity());
             orderDto.setShippingState(order.getShippingDetails().getState());
@@ -173,17 +179,82 @@ public class OrderService implements IOrderService {
             orderDto.setShippingFullName(order.getShippingDetails().getFullName());
         }
 
+        // Añadir información de pago al DTO
+        orderDto.setPaymentMethod(order.getPaymentMethod());
+        orderDto.setPaymentIntentId(order.getPaymentIntentId());
+
         return orderDto;
     }
 
     @Override
     @Transactional
     public Order updateOrderStatus(Long orderId, OrderStatus status) {
-        return orderRepository.findById(orderId)
-                .map(order -> {
-                    order.setOrderStatus(status);
-                    return orderRepository.save(order);
-                })
+        Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Orden no encontrada con ID: " + orderId));
+
+        Order previousState = new Order();
+        previousState.setOrderStatus(order.getOrderStatus());
+        previousState.setPaymentMethod(order.getPaymentMethod());
+        previousState.setPaymentIntentId(order.getPaymentIntentId());
+
+        // Actualizar el estado
+        order.setOrderStatus(status);
+
+        // Garantizar que no perdemos la información de pago si ya estaba establecida
+        if (order.getPaymentMethod() == null && previousState.getPaymentMethod() != null) {
+            order.setPaymentMethod(previousState.getPaymentMethod());
+        }
+
+        if (order.getPaymentIntentId() == null && previousState.getPaymentIntentId() != null) {
+            order.setPaymentIntentId(previousState.getPaymentIntentId());
+        }
+
+        logger.info("Updating order {} status from {} to {}, payment method: {}, payment intent: {}",
+                orderId, previousState.getOrderStatus(), status, order.getPaymentMethod(), order.getPaymentIntentId());
+
+        return orderRepository.save(order);
+    }
+
+    @Override
+    @Transactional
+    public Order updatePaymentIntent(Long orderId, String paymentIntentId) {
+        if (!StringUtils.hasText(paymentIntentId)) {
+            throw new IllegalArgumentException("El ID de PaymentIntent no puede estar vacío");
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Orden no encontrada con ID: " + orderId));
+
+        order.setPaymentIntentId(paymentIntentId);
+        logger.info("Updated order {} with payment intent: {}", orderId, paymentIntentId);
+
+        return orderRepository.save(order);
+    }
+
+    @Override
+    @Transactional
+    public Order updatePaymentDetails(Long orderId, String paymentIntentId, String paymentMethodId) {
+        if (!StringUtils.hasText(paymentIntentId)) {
+            throw new IllegalArgumentException("El ID de PaymentIntent no puede estar vacío");
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Orden no encontrada con ID: " + orderId));
+
+        order.setPaymentIntentId(paymentIntentId);
+
+        if (StringUtils.hasText(paymentMethodId)) {
+            order.setPaymentMethod(paymentMethodId);
+        }
+
+        // Si el pago ha sido procesado exitosamente, actualizar el estado
+        if (order.getOrderStatus() == OrderStatus.PENDING) {
+            order.setOrderStatus(OrderStatus.PAID);
+        }
+
+        logger.info("Updated order {} payment details - intent: {}, method: {}, status: {}",
+                orderId, paymentIntentId, paymentMethodId, order.getOrderStatus());
+
+        return orderRepository.save(order);
     }
 }

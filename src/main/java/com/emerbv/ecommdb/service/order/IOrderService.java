@@ -12,4 +12,6 @@ public interface IOrderService {
     List<OrderDto> getUserOrders(Long userId);
     OrderDto convertToDto(Order order);
     Order updateOrderStatus(Long orderId, OrderStatus status);
+    Order updatePaymentIntent(Long orderId, String paymentIntentId);
+    Order updatePaymentDetails(Long orderId, String paymentIntentId, String paymentMethodId);
 }

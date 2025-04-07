@@ -15,6 +15,8 @@ import com.emerbv.ecommdb.util.StripeUtils;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +31,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class PaymentService implements IPaymentService {
 
+    private static final Logger logger = LoggerFactory.getLogger(PaymentService.class);
     private final OrderRepository orderRepository;
     private final PaymentTransactionRepository transactionRepository;
     private final CustomerPaymentMethodRepository customerPaymentMethodRepository;
@@ -70,7 +73,7 @@ public class PaymentService implements IPaymentService {
             } catch (Exception e) {
                 // Si hay algún error al recuperar el intent, procedemos a crear uno nuevo
                 // Solo registramos el error para diagnóstico
-                System.err.println("Error retrieving existing payment intent: " + e.getMessage());
+                logger.error("Error retrieving existing payment intent: {}", e.getMessage());
             }
         }
 
@@ -139,7 +142,14 @@ public class PaymentService implements IPaymentService {
             if (orderId != null) {
                 orderRepository.findById(Long.valueOf(orderId)).ifPresent(order -> {
                     order.setOrderStatus(OrderStatus.PAID);
+
+                    // Actualizar información de pago en la orden
+                    order.setPaymentMethod(confirmedIntent.getPaymentMethod());
+                    order.setPaymentIntentId(confirmedIntent.getId());
+
                     orderRepository.save(order);
+                    logger.info("Order {} marked as PAID with payment method {} and intent {}",
+                            orderId, confirmedIntent.getPaymentMethod(), confirmedIntent.getId());
 
                     // Actualizar la transacción de pago
                     transactionRepository.findByPaymentIntentId(paymentIntentId).ifPresent(transaction -> {

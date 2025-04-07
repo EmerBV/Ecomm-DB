@@ -68,6 +68,7 @@ public class PaymentStatusUpdater {
     /**
      * Actualiza una transacción y la orden relacionada con el estado actual de Stripe
      */
+    @Transactional
     private void updateTransactionAndOrder(PaymentTransaction transaction, PaymentIntent intent) {
         String newStatus = intent.getStatus();
         transaction.setStatus(newStatus);
@@ -79,8 +80,14 @@ public class PaymentStatusUpdater {
         if ("succeeded".equals(newStatus)) {
             // Si el pago fue exitoso, actualizar la orden a PAID
             transaction.getOrder().setOrderStatus(OrderStatus.PAID);
-            logger.info("Updated order {} to PAID based on succeeded payment",
-                    transaction.getOrder().getOrderId());
+
+            // También actualizar la información de pago en la orden
+            transaction.getOrder().setPaymentMethod(intent.getPaymentMethod());
+            transaction.getOrder().setPaymentIntentId(intent.getId());
+
+            logger.info("Updated order {} to PAID with payment method {} and intent {}",
+                    transaction.getOrder().getOrderId(), intent.getPaymentMethod(), intent.getId());
+
         } else if ("canceled".equals(newStatus)) {
             // Si el pago fue cancelado, cancelar la orden
             transaction.getOrder().setOrderStatus(OrderStatus.CANCELLED);
