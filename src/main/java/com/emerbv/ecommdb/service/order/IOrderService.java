@@ -7,8 +7,7 @@ import com.emerbv.ecommdb.model.Order;
 import java.util.List;
 
 public interface IOrderService {
-    Order placeOrder(Long userId);
-    Order placeOrderWithShippingAddress(Long userId, Long shippingAddressId);
+    Order placeOrder(Long userId, Long shippingDetailsId);
     OrderDto getOrder(Long orderId);
     List<OrderDto> getUserOrders(Long userId);
     OrderDto convertToDto(Order order);

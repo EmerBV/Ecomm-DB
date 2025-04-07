@@ -20,31 +20,22 @@ public class OrderController {
     private final IOrderService orderService;
 
     @PostMapping("/user/place-order")
-    public ResponseEntity<ApiResponse> createOrder(@RequestParam Long userId) {
-        try {
-            Order order = orderService.placeOrder(userId);
-            OrderDto orderDto = orderService.convertToDto(order);
-            return ResponseEntity.ok(new ApiResponse("Create Order Success!", orderDto));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse("Error occurred!", e.getMessage()));
-        }
-    }
-
-    @PostMapping("/user/place-order-with-address")
-    public ResponseEntity<ApiResponse> createOrderWithAddress(
+    public ResponseEntity<ApiResponse> createOrder(
             @RequestParam Long userId,
-            @RequestParam Long shippingAddressId) {
+            @RequestParam Long shippingDetailsId) {
         try {
-            Order order = orderService.placeOrderWithShippingAddress(userId, shippingAddressId);
+            Order order = orderService.placeOrder(userId, shippingDetailsId);
             OrderDto orderDto = orderService.convertToDto(order);
-            return ResponseEntity.ok(new ApiResponse("Create Order Success!", orderDto));
+            return ResponseEntity.ok(new ApiResponse("Orden creada exitosamente", orderDto));
         } catch (ResourceNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ApiResponse("Shipping address not found!", e.getMessage()));
+                    .body(new ApiResponse(e.getMessage(), null));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiResponse(e.getMessage(), null));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ApiResponse("Error occurred!", e.getMessage()));
+                    .body(new ApiResponse("Error al crear la orden", e.getMessage()));
         }
     }
 

@@ -7,17 +7,15 @@ import com.emerbv.ecommdb.exceptions.ResourceNotFoundException;
 import com.emerbv.ecommdb.model.*;
 import com.emerbv.ecommdb.repository.OrderRepository;
 import com.emerbv.ecommdb.repository.ProductRepository;
+import com.emerbv.ecommdb.repository.ShippingDetailsRepository;
 import com.emerbv.ecommdb.repository.VariantRepository;
 import com.emerbv.ecommdb.service.cart.CartService;
-import com.emerbv.ecommdb.service.shipping.ShippingService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.HashSet;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,88 +26,50 @@ public class OrderService implements IOrderService {
     private final ProductRepository productRepository;
     private final VariantRepository variantRepository;
     private final CartService cartService;
-    private final ShippingService shippingService;
+    private final ShippingDetailsRepository shippingDetailsRepository;
     private final ModelMapper modelMapper;
 
     @Transactional
     @Override
-    public Order placeOrder(Long userId) {
+    public Order placeOrder(Long userId, Long shippingDetailsId) {
+        // Obtener el carrito del usuario
         Cart cart = cartService.getCartByUserId(userId);
-        Order order = createOrder(cart);
-
-        // Obtener la dirección de envío predeterminada
-        ShippingDetails shippingDetails = shippingService.getDefaultShippingDetails(userId);
-        if (shippingDetails != null) {
-            order.setShippingAddress(shippingDetails.getAddress());
-            order.setShippingCity(shippingDetails.getCity());
-            order.setShippingState(shippingDetails.getState());
-            order.setShippingPostalCode(shippingDetails.getPostalCode());
-            order.setShippingCountry(shippingDetails.getCountry());
-            order.setShippingPhoneNumber(shippingDetails.getPhoneNumber());
-            order.setShippingFullName(shippingDetails.getFullName());
+        if (cart.getItems().isEmpty()) {
+            throw new IllegalStateException("No se puede crear una orden con un carrito vacío");
         }
 
-        List<OrderItem> orderItemList = createOrderItems(order, cart);
-        order.setOrderItems(new HashSet<>(orderItemList));
-        order.setTotalAmount(calculateTotalAmount(orderItemList));
-        Order savedOrder = orderRepository.save(order);
-        cartService.clearCart(cart.getId());
-        return savedOrder;
-    }
+        // Obtener la dirección de envío
+        ShippingDetails shippingDetails = shippingDetailsRepository.findById(shippingDetailsId)
+                .orElseThrow(() -> new ResourceNotFoundException("Dirección de envío no encontrada con ID: " + shippingDetailsId));
 
-    @Transactional
-    @Override
-    public Order placeOrderWithShippingAddress(Long userId, Long shippingAddressId) {
-        Cart cart = cartService.getCartByUserId(userId);
-        Order order = createOrder(cart);
-
-        // Intentar obtener la dirección específica
-        try {
-            ShippingDetails shippingDetails = shippingService.getShippingDetailsByUserId(userId).stream()
-                    .filter(address -> address.getId().equals(shippingAddressId))
-                    .findFirst()
-                    .orElseThrow(() -> new ResourceNotFoundException("Shipping address not found"));
-
-            order.setShippingAddress(shippingDetails.getAddress());
-            order.setShippingCity(shippingDetails.getCity());
-            order.setShippingState(shippingDetails.getState());
-            order.setShippingPostalCode(shippingDetails.getPostalCode());
-            order.setShippingCountry(shippingDetails.getCountry());
-            order.setShippingPhoneNumber(shippingDetails.getPhoneNumber());
-            order.setShippingFullName(shippingDetails.getFullName());
-        } catch (ResourceNotFoundException e) {
-            // Si no se encuentra la dirección, intentar con la predeterminada
-            ShippingDetails defaultShipping = shippingService.getDefaultShippingDetails(userId);
-            if (defaultShipping != null) {
-                order.setShippingAddress(defaultShipping.getAddress());
-                order.setShippingCity(defaultShipping.getCity());
-                order.setShippingState(defaultShipping.getState());
-                order.setShippingPostalCode(defaultShipping.getPostalCode());
-                order.setShippingCountry(defaultShipping.getCountry());
-                order.setShippingPhoneNumber(defaultShipping.getPhoneNumber());
-                order.setShippingFullName(defaultShipping.getFullName());
-            }
+        // Verificar que la dirección pertenece al usuario
+        if (!shippingDetails.getUser().getId().equals(userId)) {
+            throw new IllegalArgumentException("La dirección de envío no pertenece al usuario");
         }
 
-        List<OrderItem> orderItemList = createOrderItems(order, cart);
-        order.setOrderItems(new HashSet<>(orderItemList));
-        order.setTotalAmount(calculateTotalAmount(orderItemList));
-        Order savedOrder = orderRepository.save(order);
-        cartService.clearCart(cart.getId());
-        return savedOrder;
-    }
-
-    private Order createOrder(Cart cart) {
+        // Crear la orden
         Order order = new Order();
-        // Set the user...
         order.setUser(cart.getUser());
-        // Inicialmente, la orden está en estado PENDING (esperando pago)
         order.setOrderStatus(OrderStatus.PENDING);
-        order.setOrderDate(LocalDate.now());
-        return order;
+        order.setOrderDate(LocalDateTime.now());
+        order.setShippingDetails(shippingDetails);
+
+        // Procesar los items del carrito
+        List<OrderItem> orderItemList = createOrderItems(order, cart);
+        orderItemList.forEach(order::addOrderItem);
+
+        // Calcular el total
+        order.setTotalAmount(order.calculateTotalAmount());
+
+        // Guardar la orden
+        Order savedOrder = orderRepository.save(order);
+
+        // Limpiar el carrito
+        cartService.clearCart(cart.getId());
+
+        return savedOrder;
     }
 
-    // Resto del código permanece igual
     private List<OrderItem> createOrderItems(Order order, Cart cart) {
         return cart.getItems().stream().map(cartItem -> {
             Product product = cartItem.getProduct();
@@ -158,26 +118,22 @@ public class OrderService implements IOrderService {
 
     private void updateSalesCount(Product product, CartItem cartItem) {
         product.setSalesCount(product.getSalesCount() + cartItem.getQuantity());
-    }
-
-    private BigDecimal calculateTotalAmount(List<OrderItem> orderItemList) {
-        return orderItemList
-                .stream()
-                .map(item -> item.getPrice()
-                        .multiply(new BigDecimal(item.getQuantity())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        productRepository.save(product);
     }
 
     @Override
     public OrderDto getOrder(Long orderId) {
         return orderRepository.findById(orderId)
                 .map(this::convertToDto)
-                .orElseThrow(() -> new ResourceNotFoundException("No orders found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Orden no encontrada con ID: " + orderId));
     }
 
     @Override
     public List<OrderDto> getUserOrders(Long userId) {
         List<Order> orders = orderRepository.findByUserId(userId);
+        if (orders.isEmpty()) {
+            throw new ResourceNotFoundException("No se encontraron órdenes para el usuario con ID: " + userId);
+        }
         return orders.stream().map(this::convertToDto).toList();
     }
 
@@ -189,9 +145,9 @@ public class OrderService implements IOrderService {
         if (order.getOrderItems() != null) {
             orderDto.setItems(order.getOrderItems().stream().map(item -> {
                 OrderItemDto itemDto = new OrderItemDto();
-                itemDto.setProductId(item.getProduct().getId());
-                itemDto.setProductName(item.getProduct().getName());
-                itemDto.setProductBrand(item.getProduct().getBrand());
+                itemDto.setProductId(item.getProduct() != null ? item.getProduct().getId() : null);
+                itemDto.setProductName(item.getProduct() != null ? item.getProduct().getName() : "Producto no disponible");
+                itemDto.setProductBrand(item.getProduct() != null ? item.getProduct().getBrand() : "");
                 itemDto.setQuantity(item.getQuantity());
                 itemDto.setPrice(item.getPrice());
                 itemDto.setTotalPrice(item.getTotalPrice());
@@ -206,6 +162,17 @@ public class OrderService implements IOrderService {
             }).toList());
         }
 
+        // Incluir información de la dirección de envío en el DTO
+        if (order.getShippingDetails() != null) {
+            orderDto.setShippingAddress(order.getShippingDetails().getAddress());
+            orderDto.setShippingCity(order.getShippingDetails().getCity());
+            orderDto.setShippingState(order.getShippingDetails().getState());
+            orderDto.setShippingPostalCode(order.getShippingDetails().getPostalCode());
+            orderDto.setShippingCountry(order.getShippingDetails().getCountry());
+            orderDto.setShippingPhoneNumber(order.getShippingDetails().getPhoneNumber());
+            orderDto.setShippingFullName(order.getShippingDetails().getFullName());
+        }
+
         return orderDto;
     }
 
@@ -217,6 +184,6 @@ public class OrderService implements IOrderService {
                     order.setOrderStatus(status);
                     return orderRepository.save(order);
                 })
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+                .orElseThrow(() -> new ResourceNotFoundException("Orden no encontrada con ID: " + orderId));
     }
 }
