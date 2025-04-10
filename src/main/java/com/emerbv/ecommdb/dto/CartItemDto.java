@@ -3,6 +3,7 @@ package com.emerbv.ecommdb.dto;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 public class CartItemDto {
@@ -13,4 +14,5 @@ public class CartItemDto {
     private Long variantId;
     private String variantName;
     private ProductDto product;
+    private List<ImageDto> images;
 }
