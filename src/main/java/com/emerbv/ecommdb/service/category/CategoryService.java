@@ -119,7 +119,13 @@ public class CategoryService implements ICategoryService {
 
     @Override
     public CategoryDto convertToDto(Category category) {
-        return modelMapper.map(category, CategoryDto.class);
+        CategoryDto dto = new CategoryDto();
+        dto.setId(category.getId());
+        dto.setName(category.getName());
+        dto.setImageFileName(category.getImageFileName());
+        dto.setImageFileType(category.getImageFileType());
+        dto.setImageDownloadUrl(category.getImageDownloadUrl());
+        return dto;
     }
 
     @Override
