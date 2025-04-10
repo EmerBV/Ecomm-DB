@@ -115,7 +115,7 @@ public class CategoryController {
         }
     }
 
-    @GetMapping("/download/{categoryId}/image")
+    @GetMapping("/images/download/{categoryId}")
     public ResponseEntity<Resource> getCategoryImage(@PathVariable Long categoryId) {
         try {
             byte[] imageData = categoryService.getCategoryImage(categoryId);

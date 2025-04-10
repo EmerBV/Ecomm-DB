@@ -77,7 +77,8 @@ public class CategoryService implements ICategoryService {
             category.setImage(new SerialBlob(file.getBytes()));
 
             // Construir URL de descarga
-            String downloadUrl = "/api/v1/categories/download/" + categoryId + "/image";
+            String buildDownloadUrl = "/api/v1/categories/images/download/";
+            String downloadUrl = buildDownloadUrl + category.getId();
             category.setImageDownloadUrl(downloadUrl);
 
             return categoryRepository.save(category);
