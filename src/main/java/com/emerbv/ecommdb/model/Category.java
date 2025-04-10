@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.sql.Blob;
 import java.util.List;
 
 @Getter
@@ -17,6 +18,13 @@ public class Category {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
+
+    private String imageFileName;
+    private String imageFileType;
+
+    @Lob
+    private Blob image;
+    private String imageDownloadUrl;
 
     @JsonIgnore
     @OneToMany(mappedBy = "category")
