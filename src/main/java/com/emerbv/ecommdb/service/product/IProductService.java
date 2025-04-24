@@ -38,4 +38,6 @@ public interface IProductService {
     List<Product> getPreOrderProducts();
     List<Product> getPreOrderProductsByStatus(ProductStatus status);
 
+    List<Product> getMostWishedProducts(int limit);
+
 }

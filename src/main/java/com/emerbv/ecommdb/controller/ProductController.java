@@ -10,6 +10,7 @@ import com.emerbv.ecommdb.response.ApiResponse;
 import com.emerbv.ecommdb.service.product.IProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -279,7 +280,6 @@ public class ProductController {
 
      */
 
-
     @GetMapping("/product/count/by-brand/and-name")
     public ResponseEntity<ApiResponse> countProductsByBrandAndName(@RequestParam String brand, @RequestParam String name) {
         try {
@@ -287,6 +287,19 @@ public class ProductController {
             return ResponseEntity.ok(new ApiResponse("Product count!", productCount));
         } catch (Exception e) {
             return ResponseEntity.ok(new ApiResponse(e.getMessage(), null));
+        }
+    }
+
+    @GetMapping("/most-wished")
+    public ResponseEntity<ApiResponse> getMostWishedProducts(
+            @RequestParam(defaultValue = "10") int limit) {
+        try {
+            List<Product> products = productService.getMostWishedProducts(limit);
+            List<ProductDto> productDtos = productService.getConvertedProducts(products);
+            return ResponseEntity.ok(new ApiResponse("Most wished products retrieved successfully", productDtos));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("Error retrieving most wished products", e.getMessage()));
         }
     }
 }

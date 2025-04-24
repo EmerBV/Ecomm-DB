@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -330,6 +331,14 @@ public class ProductService implements IProductService  {
     @Override
     public List<Product> getPreOrderProductsByStatus(ProductStatus status) {
         return productRepository.findByPreOrderTrueAndStatus(status);
+    }
+
+    @Override
+    public List<Product> getMostWishedProducts(int limit) {
+        return productRepository.findTop10ByOrderByWishCountDesc()
+                .stream()
+                .limit(limit)
+                .collect(Collectors.toList());
     }
 
     /*
