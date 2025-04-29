@@ -6,11 +6,13 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum OrderStatus {
     PENDING,
+    PENDING_PAYMENT,
     PROCESSING,
     PAID,
     SHIPPED,
     DELIVERED,
-    CANCELLED;
+    CANCELLED,
+    REFUNDED;
 
     @JsonCreator
     public static OrderStatus fromString(String value) {
