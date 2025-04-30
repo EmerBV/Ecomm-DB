@@ -17,7 +17,7 @@ import com.stripe.model.PaymentIntent;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.access.AccessDeniedException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +36,9 @@ public class PaymentService implements IPaymentService {
     private final PaymentTransactionRepository transactionRepository;
     private final CustomerPaymentMethodRepository customerPaymentMethodRepository;
     private final StripeUtils stripeUtils;
+
+    @Value("${app.payment.default-currency:eur}")
+    private String defaultCurrency;
 
     @Override
     @Transactional
@@ -85,7 +88,7 @@ public class PaymentService implements IPaymentService {
         // Crear PaymentIntent con configuración básica
         Map<String, Object> params = new HashMap<>();
         params.put("amount", amount);
-        params.put("currency", paymentRequest.getCurrency() != null ? paymentRequest.getCurrency() : "usd");
+        params.put("currency", paymentRequest.getCurrency() != null ? paymentRequest.getCurrency() : defaultCurrency);
 
         // Configuración para métodos de pago
         Map<String, Object> paymentMethodOptions = new HashMap<>();
