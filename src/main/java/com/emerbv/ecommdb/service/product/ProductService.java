@@ -230,9 +230,7 @@ public class ProductService implements IProductService  {
         if (request.getStatus() != null) {
             existingProduct.setStatus(request.getStatus());
         } else {
-            existingProduct.setStatus(
-                    existingProduct.getInventory() > 0 ? ProductStatus.IN_STOCK : ProductStatus.OUT_OF_STOCK
-            );
+            existingProduct.updateProductStatus();
         }
 
         return existingProduct;

@@ -103,20 +103,30 @@ public class OrderService implements IOrderService {
         }).toList();
     }
 
+    @Transactional
     private void updateInventory(Product product, CartItem cartItem) {
         // Si el item tiene variantId, actualizar el inventario de la variante
         if (cartItem.getVariantId() != null) {
             Optional<Variant> variantOptional = variantRepository.findById(cartItem.getVariantId());
             if (variantOptional.isPresent()) {
                 Variant variant = variantOptional.get();
-                variant.setInventory(variant.getInventory() - cartItem.getQuantity());
+                variant.setInventory(Math.max(0, variant.getInventory() - cartItem.getQuantity()));
+
                 // Actualizar también el inventario total del producto
                 product.updateProductDetails();
+
+                // AÑADIDO: Actualizar el estado del producto basado en el inventario
+                product.updateProductStatus();
+
                 productRepository.save(product);
             }
         } else {
             // Si no tiene variante, actualizar directamente el inventario del producto
-            product.setInventory(product.getInventory() - cartItem.getQuantity());
+            product.setInventory(Math.max(0, product.getInventory() - cartItem.getQuantity()));
+
+            // AÑADIDO: Actualizar el estado del producto basado en el inventario
+            product.updateProductStatus();
+
             productRepository.save(product);
         }
     }

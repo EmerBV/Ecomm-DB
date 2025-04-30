@@ -7,6 +7,7 @@ import com.emerbv.ecommdb.model.Product;
 import com.emerbv.ecommdb.model.Variant;
 import com.emerbv.ecommdb.repository.CartItemRepository;
 import com.emerbv.ecommdb.repository.CartRepository;
+import com.emerbv.ecommdb.repository.ProductRepository;
 import com.emerbv.ecommdb.service.product.IProductService;
 import com.emerbv.ecommdb.service.variant.IVariantService;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import java.math.BigDecimal;
 public class CartItemService implements ICartItemService {
     private final CartItemRepository cartItemRepository;
     private final CartRepository cartRepository;
+    private final ProductRepository productRepository;
     private final IProductService productService;
     private final IVariantService variantService;
     private final ICartService cartService;
@@ -108,6 +110,9 @@ public class CartItemService implements ICartItemService {
         cart.addItem(cartItem);
         cartItemRepository.save(cartItem);
         cartRepository.save(cart);
+
+        product.updateProductStatus();
+        productRepository.save(product);
     }
 
     @Override
@@ -141,6 +146,9 @@ public class CartItemService implements ICartItemService {
         cart.addItem(cartItem);
         cartItemRepository.save(cartItem);
         cartRepository.save(cart);
+
+        product.updateProductStatus();
+        productRepository.save(product);
     }
 
     @Override

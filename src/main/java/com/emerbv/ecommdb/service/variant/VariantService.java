@@ -120,8 +120,7 @@ public class VariantService implements IVariantService {
         product.updateProductDetails();
 
         // Actualizar el estado del producto basado en el inventario total
-        int totalInventory = product.getTotalInventory();
-        product.setStatus(totalInventory > 0 ? ProductStatus.IN_STOCK : ProductStatus.OUT_OF_STOCK);
+        product.updateProductStatus();
 
         // Guardar los cambios en el producto
         productService.updateProductAfterVariantsChange(product);

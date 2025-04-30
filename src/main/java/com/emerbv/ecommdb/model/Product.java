@@ -77,12 +77,26 @@ public class Product {
     }
 
     public ProductStatus getProductStatus() {
-        if (this.inventory == 0) {
+        // Actualizar inventario primero desde variantes, si existen
+        updateProductDetails();
+
+        // Determinar el estado basado en el inventario total
+        if (this.getTotalInventory() <= 0) {
             this.status = ProductStatus.OUT_OF_STOCK;
         } else {
             this.status = ProductStatus.IN_STOCK;
         }
         return this.status;
+    }
+
+    public ProductStatus updateProductStatus() {
+        // Primero actualizar los detalles del producto para tener el inventario total actualizado
+        updateProductDetails();
+
+        // Determinar el estado basado en el inventario total
+        ProductStatus newStatus = getTotalInventory() > 0 ? ProductStatus.IN_STOCK : ProductStatus.OUT_OF_STOCK;
+        this.status = newStatus;
+        return newStatus;
     }
 
     public Product(
