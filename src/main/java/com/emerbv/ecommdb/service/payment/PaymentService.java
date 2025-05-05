@@ -2,10 +2,7 @@ package com.emerbv.ecommdb.service.payment;
 
 import com.emerbv.ecommdb.enums.OrderStatus;
 import com.emerbv.ecommdb.exceptions.ResourceNotFoundException;
-import com.emerbv.ecommdb.model.CustomerPaymentMethod;
-import com.emerbv.ecommdb.model.Order;
-import com.emerbv.ecommdb.model.PaymentTransaction;
-import com.emerbv.ecommdb.model.User;
+import com.emerbv.ecommdb.model.*;
 import com.emerbv.ecommdb.repository.CustomerPaymentMethodRepository;
 import com.emerbv.ecommdb.repository.OrderRepository;
 import com.emerbv.ecommdb.repository.PaymentTransactionRepository;
@@ -14,14 +11,17 @@ import com.emerbv.ecommdb.response.PaymentIntentResponse;
 import com.emerbv.ecommdb.util.StripeUtils;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
+import com.stripe.net.RequestOptions;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,9 +32,10 @@ import java.util.Optional;
 public class PaymentService implements IPaymentService {
 
     private static final Logger logger = LoggerFactory.getLogger(PaymentService.class);
+    private final IdempotencyService idempotencyService;
     private final OrderRepository orderRepository;
     private final PaymentTransactionRepository transactionRepository;
-    private final CustomerPaymentMethodRepository customerPaymentMethodRepository;
+    private final CustomerPaymentMethodRepository paymentMethodRepository;
     private final StripeUtils stripeUtils;
 
     @Value("${app.payment.default-currency:eur}")
@@ -43,6 +44,25 @@ public class PaymentService implements IPaymentService {
     @Override
     @Transactional
     public PaymentIntentResponse createPaymentIntent(PaymentRequest paymentRequest) throws StripeException {
+        // Verificar si ya existe un intento con la misma clave de idempotencia
+        String idempotencyKey = paymentRequest.getIdempotencyKey();
+        if (idempotencyKey == null) {
+            // Si no se proporciona, generar una
+            idempotencyKey = idempotencyService.generateIdempotencyKey();
+            logger.info("Generando clave de idempotencia: {}", idempotencyKey);
+        }
+
+        Optional<IdempotencyRecord> existingRecord = idempotencyService.findByKey(
+                idempotencyKey, "PAYMENT_INTENT_CREATE");
+
+        if (existingRecord.isPresent() && "SUCCESS".equals(existingRecord.get().getStatus())) {
+            // Si ya existe un intento exitoso, devolver la información existente
+            logger.info("Reutilizando PaymentIntent existente para clave de idempotencia: {}", idempotencyKey);
+            String paymentIntentId = existingRecord.get().getEntityId();
+            PaymentIntent existingIntent = PaymentIntent.retrieve(paymentIntentId);
+            return new PaymentIntentResponse(existingIntent.getClientSecret(), existingIntent.getId());
+        }
+
         // Obtener la orden que queremos pagar
         Order order = orderRepository.findById(paymentRequest.getOrderId())
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + paymentRequest.getOrderId()));
@@ -111,100 +131,286 @@ public class PaymentService implements IPaymentService {
             params.put("receipt_email", paymentRequest.getReceiptEmail());
         }
 
+        // Si se proporcionó un PaymentMethod, añadirlo al intent
         if (paymentRequest.getPaymentMethodId() != null) {
             params.put("payment_method", paymentRequest.getPaymentMethodId());
         }
 
-        // Crear el PaymentIntent
-        PaymentIntent intent = PaymentIntent.create(params);
+        // Si se proporcionó un ID de método de pago guardado, obtenerlo y usarlo
+        else if (paymentRequest.getSavedPaymentMethodId() != null) {
+            CustomerPaymentMethod savedMethod = paymentMethodRepository.findById(paymentRequest.getSavedPaymentMethodId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Saved payment method not found"));
 
-        // Guardar la transacción de pago
-        PaymentTransaction transaction = new PaymentTransaction(
-                intent.getId(),
-                order.getTotalAmount(),
-                paymentRequest.getCurrency() != null ? paymentRequest.getCurrency() : "usd",
-                intent.getStatus(),
-                paymentRequest.getPaymentMethodId(),
-                order
-        );
-        transactionRepository.save(transaction);
+            // Verificar que el método de pago pertenece al usuario de la orden
+            if (!savedMethod.getUser().getId().equals(order.getUser().getId())) {
+                throw new IllegalStateException("The payment method does not belong to the order user");
+            }
 
-        return new PaymentIntentResponse(intent.getClientSecret(), intent.getId());
+            params.put("payment_method", savedMethod.getStripePaymentMethodId());
+        }
+
+        // Configuración para confirmar automáticamente si se proporciona un método de pago
+        if (paymentRequest.getPaymentMethodId() != null || paymentRequest.getSavedPaymentMethodId() != null) {
+            params.put("confirm", true);
+        }
+
+        // Configurar para guardar el método de pago si se solicita
+        if (paymentRequest.isSavePaymentMethod() && order.getUser() != null) {
+            params.put("setup_future_usage", "off_session");
+
+            // Asegurarse de que el usuario tenga un customerID en Stripe
+            User user = order.getUser();
+            if (user.getStripeCustomerId() == null || user.getStripeCustomerId().isEmpty()) {
+                // Esto usualmente lo manejaría el StripeCustomerService, pero aquí hacemos una verificación simple
+                throw new IllegalStateException("User does not have a Stripe customer ID. Please create one first.");
+            }
+
+            params.put("customer", user.getStripeCustomerId());
+        }
+
+        // Añadir idempotencyKey a la solicitud de Stripe
+        com.stripe.net.RequestOptions requestOptions = com.stripe.net.RequestOptions.builder()
+                .setIdempotencyKey(idempotencyKey)
+                .build();
+
+        try {
+            // Crear el PaymentIntent
+            com.stripe.model.PaymentIntent intent = com.stripe.model.PaymentIntent.create(params, requestOptions);
+
+            // Actualizar la orden con el ID del intent
+            order.setPaymentIntentId(intent.getId());
+            order.setOrderStatus(OrderStatus.PENDING_PAYMENT);
+            orderRepository.save(order);
+
+            // Guardar la transacción de pago
+            PaymentTransaction transaction = new PaymentTransaction(
+                    intent.getId(),
+                    order.getTotalAmount(),
+                    paymentRequest.getCurrency() != null ? paymentRequest.getCurrency() : defaultCurrency,
+                    intent.getStatus(),
+                    intent.getPaymentMethod(),
+                    order
+            );
+            transactionRepository.save(transaction);
+
+            // Registrar la operación exitosa
+            idempotencyService.recordOperation(
+                    idempotencyKey,
+                    "PAYMENT_INTENT_CREATE",
+                    intent.getId(),
+                    "SUCCESS"
+            );
+
+            return new PaymentIntentResponse(intent.getClientSecret(), intent.getId());
+
+        } catch (StripeException e) {
+            // Registrar el error para esta operación
+            idempotencyService.recordOperation(
+                    idempotencyKey,
+                    "PAYMENT_INTENT_CREATE",
+                    paymentRequest.getOrderId().toString(),
+                    "ERROR"
+            );
+
+            logger.error("Error creating payment intent for order {}: {}", paymentRequest.getOrderId(), e.getMessage());
+            throw e;
+        }
     }
 
     @Override
     @Transactional
     public PaymentIntent confirmPayment(String paymentIntentId) throws StripeException {
+        // Verificar si ya existe un registro de idempotencia para esta operación
+        String idempotencyKey = idempotencyService.generateIdempotencyKey();
+
+        // Recuperar el PaymentIntent
         PaymentIntent intent = PaymentIntent.retrieve(paymentIntentId);
+
+        // Configurar opciones para la confirmación
         Map<String, Object> params = new HashMap<>();
-        PaymentIntent confirmedIntent = intent.confirm(params);
 
-        // Si el pago fue exitoso, actualizar el estado de la orden
-        if ("succeeded".equals(confirmedIntent.getStatus())) {
-            String orderId = confirmedIntent.getMetadata().get("orderId");
-            if (orderId != null) {
-                orderRepository.findById(Long.valueOf(orderId)).ifPresent(order -> {
-                    order.setOrderStatus(OrderStatus.PAID);
+        // Opciones de idempotencia para la API de Stripe
+        com.stripe.net.RequestOptions requestOptions = com.stripe.net.RequestOptions.builder()
+                .setIdempotencyKey(idempotencyKey)
+                .build();
 
-                    // Actualizar información de pago en la orden
-                    order.setPaymentMethod(confirmedIntent.getPaymentMethod());
-                    order.setPaymentIntentId(confirmedIntent.getId());
+        try {
+            // Confirmar el PaymentIntent
+            com.stripe.model.PaymentIntent confirmedIntent = com.stripe.model.PaymentIntent.create(params, requestOptions);
 
-                    orderRepository.save(order);
-                    logger.info("Order {} marked as PAID with payment method {} and intent {}",
-                            orderId, confirmedIntent.getPaymentMethod(), confirmedIntent.getId());
+            // Registrar la operación exitosa
+            idempotencyService.recordOperation(
+                    idempotencyKey,
+                    "PAYMENT_INTENT_CONFIRM",
+                    paymentIntentId,
+                    "SUCCESS"
+            );
 
-                    // Actualizar la transacción de pago
-                    transactionRepository.findByPaymentIntentId(paymentIntentId).ifPresent(transaction -> {
-                        transaction.setStatus(confirmedIntent.getStatus());
-                        transaction.setPaymentMethod(confirmedIntent.getPaymentMethod());
-                        transactionRepository.save(transaction);
+            // Si el pago fue exitoso, actualizar el estado de la orden
+            if ("succeeded".equals(confirmedIntent.getStatus())) {
+                String orderId = confirmedIntent.getMetadata().get("orderId");
+                if (orderId != null) {
+                    orderRepository.findById(Long.valueOf(orderId)).ifPresent(order -> {
+                        order.setOrderStatus(OrderStatus.PAID);
+
+                        // Actualizar información de pago en la orden
+                        order.setPaymentMethod(confirmedIntent.getPaymentMethod());
+                        order.setPaymentIntentId(confirmedIntent.getId());
+
+                        orderRepository.save(order);
+                        logger.info("Order {} marked as PAID with payment method {} and intent {}",
+                                orderId, confirmedIntent.getPaymentMethod(), confirmedIntent.getId());
+
+                        // Actualizar la transacción de pago
+                        transactionRepository.findByPaymentIntentId(paymentIntentId).ifPresent(transaction -> {
+                            transaction.setStatus(confirmedIntent.getStatus());
+                            transaction.setPaymentMethod(confirmedIntent.getPaymentMethod());
+                            transactionRepository.save(transaction);
+                        });
                     });
-                });
+                }
             }
-        }
 
-        return confirmedIntent;
+            return confirmedIntent;
+
+        } catch (StripeException e) {
+            // Registrar el error
+            idempotencyService.recordOperation(
+                    idempotencyKey,
+                    "PAYMENT_INTENT_CONFIRM",
+                    paymentIntentId,
+                    "ERROR"
+            );
+
+            logger.error("Error confirming payment intent {}: {}", paymentIntentId, e.getMessage());
+            throw e;
+        }
     }
 
     @Override
     @Transactional
     public PaymentIntent cancelPayment(String paymentIntentId) throws StripeException {
-        PaymentIntent intent = PaymentIntent.retrieve(paymentIntentId);
-        PaymentIntent canceledIntent = intent.cancel();
+        // Generar clave de idempotencia para esta operación
+        String idempotencyKey = idempotencyService.generateIdempotencyKey();
 
-        // Actualizar el estado de la orden a cancelado
-        String orderId = canceledIntent.getMetadata().get("orderId");
-        if (orderId != null) {
-            orderRepository.findById(Long.valueOf(orderId)).ifPresent(order -> {
-                order.setOrderStatus(OrderStatus.CANCELLED);
-                orderRepository.save(order);
+        try {
+            // Recuperar el PaymentIntent
+           PaymentIntent intent = PaymentIntent.retrieve(paymentIntentId);
 
-                // Actualizar la transacción de pago
-                transactionRepository.findByPaymentIntentId(paymentIntentId).ifPresent(transaction -> {
-                    transaction.setStatus("canceled");
-                    transaction.setErrorMessage("Payment canceled by user or system");
-                    transactionRepository.save(transaction);
+            // Configurar opciones de idempotencia para la API de Stripe
+            Map<String, Object> requestOptions = new HashMap<>();
+            requestOptions.put("idempotencyKey", idempotencyKey);
+
+            // Cancelar el PaymentIntent
+            PaymentIntent canceledIntent = intent.cancel(requestOptions);
+
+            // Registrar la operación exitosa
+            idempotencyService.recordOperation(
+                    idempotencyKey,
+                    "PAYMENT_INTENT_CANCEL",
+                    paymentIntentId,
+                    "SUCCESS"
+            );
+
+            // Actualizar el estado de la orden a cancelado
+            String orderId = canceledIntent.getMetadata().get("orderId");
+            if (orderId != null) {
+                orderRepository.findById(Long.valueOf(orderId)).ifPresent(order -> {
+                    order.setOrderStatus(OrderStatus.CANCELLED);
+                    orderRepository.save(order);
+
+                    // Actualizar la transacción de pago
+                    transactionRepository.findByPaymentIntentId(paymentIntentId).ifPresent(transaction -> {
+                        transaction.setStatus("canceled");
+                        transaction.setErrorMessage("Payment canceled by user or system");
+                        transactionRepository.save(transaction);
+                    });
                 });
-            });
-        }
+            }
 
-        return canceledIntent;
+            return canceledIntent;
+
+        } catch (StripeException e) {
+            // Registrar el error
+            idempotencyService.recordOperation(
+                    idempotencyKey,
+                    "PAYMENT_INTENT_CANCEL",
+                    paymentIntentId,
+                    "ERROR"
+            );
+
+            logger.error("Error canceling payment intent {}: {}", paymentIntentId, e.getMessage());
+            throw e;
+        }
     }
 
     @Override
     @Transactional(readOnly = true)
     public PaymentIntent retrievePayment(String paymentIntentId) throws StripeException {
-        PaymentIntent intent = PaymentIntent.retrieve(paymentIntentId);
+        try {
+            PaymentIntent intent = PaymentIntent.retrieve(paymentIntentId);
 
-        // Opcionalmente, actualizar la transacción local si hay cambios en el estado
-        transactionRepository.findByPaymentIntentId(paymentIntentId).ifPresent(transaction -> {
-            if (!transaction.getStatus().equals(intent.getStatus())) {
-                transaction.setStatus(intent.getStatus());
-                transactionRepository.save(transaction);
+            // Opcionalmente, actualizar la transacción local si hay cambios en el estado
+            transactionRepository.findByPaymentIntentId(paymentIntentId).ifPresent(transaction -> {
+                if (!transaction.getStatus().equals(intent.getStatus())) {
+                    transaction.setStatus(intent.getStatus());
+                    transaction.setUpdatedAt(LocalDateTime.now());
+                    transactionRepository.save(transaction);
+
+                    // Si el pago se completó, actualizar también el estado de la orden
+                    if ("succeeded".equals(intent.getStatus())) {
+                        Order order = transaction.getOrder();
+                        if (order != null && order.getOrderStatus() != OrderStatus.PAID) {
+                            order.setOrderStatus(OrderStatus.PAID);
+                            order.setPaymentMethod(intent.getPaymentMethod());
+                            orderRepository.save(order);
+                        }
+                    }
+                }
+            });
+
+            return intent;
+
+        } catch (StripeException e) {
+            logger.error("Error retrieving payment intent {}: {}", paymentIntentId, e.getMessage());
+            throw e;
+        }
+    }
+
+    @Override
+    @Transactional
+    public Order updatePaymentDetails(Long orderId, String paymentIntentId, String paymentMethodId) {
+        if (!StringUtils.hasText(paymentIntentId)) {
+            throw new IllegalArgumentException("Payment Intent ID cannot be empty");
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
+
+        order.setPaymentIntentId(paymentIntentId);
+
+        if (StringUtils.hasText(paymentMethodId)) {
+            order.setPaymentMethod(paymentMethodId);
+        }
+
+        // Si el pago ha sido procesado exitosamente, actualizar el estado
+        if (order.getOrderStatus() == OrderStatus.PENDING ||
+                order.getOrderStatus() == OrderStatus.PENDING_PAYMENT) {
+            try {
+                com.stripe.model.PaymentIntent intent = com.stripe.model.PaymentIntent.retrieve(paymentIntentId);
+                if ("succeeded".equals(intent.getStatus())) {
+                    order.setOrderStatus(OrderStatus.PAID);
+                }
+            } catch (com.stripe.exception.StripeException e) {
+                logger.error("Error retrieving payment intent {} for order update: {}",
+                        paymentIntentId, e.getMessage());
+                // No fallamos la operación, solo logueamos el error
             }
-        });
+        }
 
-        return intent;
+        logger.info("Updated order {} payment details - intent: {}, method: {}, status: {}",
+                orderId, paymentIntentId, paymentMethodId, order.getOrderStatus());
+
+        return orderRepository.save(order);
     }
 }

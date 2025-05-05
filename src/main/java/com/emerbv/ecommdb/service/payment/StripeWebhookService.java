@@ -3,13 +3,12 @@ package com.emerbv.ecommdb.service.payment;
 import com.emerbv.ecommdb.enums.OrderStatus;
 import com.emerbv.ecommdb.model.Order;
 import com.emerbv.ecommdb.model.PaymentTransaction;
+import com.emerbv.ecommdb.repository.DisputeRepository;
 import com.emerbv.ecommdb.repository.OrderRepository;
 import com.emerbv.ecommdb.repository.PaymentTransactionRepository;
+import com.emerbv.ecommdb.repository.RefundRepository;
 import com.stripe.exception.SignatureVerificationException;
-import com.stripe.model.Event;
-import com.stripe.model.EventDataObjectDeserializer;
-import com.stripe.model.PaymentIntent;
-import com.stripe.model.StripeObject;
+import com.stripe.model.*;
 import com.stripe.net.Webhook;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -23,8 +22,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class StripeWebhookService {
     private static final Logger logger = LoggerFactory.getLogger(StripeWebhookService.class);
 
+    private final IDisputeService disputeService;
+    private final IRefundService refundService;
     private final OrderRepository orderRepository;
     private final PaymentTransactionRepository transactionRepository;
+    private final RefundRepository refundRepository;
+    private final DisputeRepository disputeRepository;
 
     @Value("${stripe.webhook.secret}")
     private String endpointSecret;
@@ -64,6 +67,23 @@ public class StripeWebhookService {
                 break;
             case "payment_intent.canceled":
                 handlePaymentIntentCanceled((PaymentIntent) stripeObject);
+                break;
+            case "charge.refunded":
+                handleChargeRefunded((Charge) stripeObject);
+                break;
+            case "charge.refund.updated":
+                handleRefundUpdated((Refund) stripeObject);
+                break;
+
+            // Nuevos eventos para disputas
+            case "charge.dispute.created":
+                handleDisputeCreated((com.stripe.model.Dispute) stripeObject);
+                break;
+            case "charge.dispute.updated":
+                handleDisputeUpdated((com.stripe.model.Dispute) stripeObject);
+                break;
+            case "charge.dispute.closed":
+                handleDisputeClosed((com.stripe.model.Dispute) stripeObject);
                 break;
             default:
                 logger.info("Unhandled event type: {}", event.getType());
@@ -149,5 +169,79 @@ public class StripeWebhookService {
                             transactionRepository.save(newTransaction);
                         }
                 );
+    }
+
+    // Método para manejar reembolsos
+    private void handleChargeRefunded(com.stripe.model.Charge charge) {
+        logger.info("Cargo reembolsado: {}", charge.getId());
+        // Implementación específica para reembolsos
+    }
+
+    private void handleRefundUpdated(com.stripe.model.Refund refund) {
+        logger.info("Reembolso actualizado: {}", refund.getId());
+        try {
+            refundRepository.findByStripeRefundId(refund.getId())
+                    .ifPresent(localRefund -> {
+                        try {
+                            refundService.syncRefundStatus(refund.getId());
+                            logger.info("Estado del reembolso {} actualizado correctamente", refund.getId());
+                        } catch (Exception e) {
+                            logger.error("Error al actualizar el reembolso {}: {}", refund.getId(), e.getMessage());
+                        }
+                    });
+        } catch (Exception e) {
+            logger.error("Error al procesar la actualización del reembolso {}: {}", refund.getId(), e.getMessage());
+        }
+    }
+
+    private void handleDisputeCreated(com.stripe.model.Dispute stripeDispute) {
+        logger.info("Nueva disputa creada: {}", stripeDispute.getId());
+        try {
+            String paymentIntentId = stripeDispute.getPaymentIntent();
+            if (paymentIntentId != null) {
+                disputeService.createOrUpdateDispute(stripeDispute.getId(), paymentIntentId);
+                logger.info("Disputa {} registrada correctamente", stripeDispute.getId());
+            } else {
+                logger.warn("No se encontró PaymentIntent para la disputa {}", stripeDispute.getId());
+            }
+        } catch (Exception e) {
+            logger.error("Error al procesar la disputa {}: {}", stripeDispute.getId(), e.getMessage());
+        }
+    }
+
+    private void handleDisputeUpdated(com.stripe.model.Dispute stripeDispute) {
+        logger.info("Disputa actualizada: {}", stripeDispute.getId());
+        try {
+            // Buscar la disputa local por ID de Stripe
+            disputeRepository.findByStripeDisputeId(stripeDispute.getId())
+                    .ifPresent(dispute -> {
+                        try {
+                            disputeService.updateDisputeStatus(dispute);
+                            logger.info("Estado de la disputa {} actualizado correctamente", stripeDispute.getId());
+                        } catch (Exception e) {
+                            logger.error("Error al actualizar la disputa {}: {}", stripeDispute.getId(), e.getMessage());
+                        }
+                    });
+        } catch (Exception e) {
+            logger.error("Error al procesar la actualización de la disputa {}: {}", stripeDispute.getId(), e.getMessage());
+        }
+    }
+
+    private void handleDisputeClosed(com.stripe.model.Dispute stripeDispute) {
+        logger.info("Disputa cerrada: {}", stripeDispute.getId());
+        try {
+            // Buscar la disputa local por ID de Stripe
+            disputeRepository.findByStripeDisputeId(stripeDispute.getId())
+                    .ifPresent(dispute -> {
+                        try {
+                            disputeService.updateDisputeStatus(dispute);
+                            logger.info("Disputa {} cerrada correctamente", stripeDispute.getId());
+                        } catch (Exception e) {
+                            logger.error("Error al cerrar la disputa {}: {}", stripeDispute.getId(), e.getMessage());
+                        }
+                    });
+        } catch (Exception e) {
+            logger.error("Error al procesar el cierre de la disputa {}: {}", stripeDispute.getId(), e.getMessage());
+        }
     }
 }

@@ -11,4 +11,6 @@ public class PaymentRequest {
     private String receiptEmail;
     private String description;
     private boolean savePaymentMethod; // Para guardar el método después del pago
+
+    private String idempotencyKey;
 }

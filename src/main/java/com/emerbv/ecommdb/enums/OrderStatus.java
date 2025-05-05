@@ -12,6 +12,7 @@ public enum OrderStatus {
     SHIPPED,
     DELIVERED,
     CANCELLED,
+    DISPUTED,
     REFUNDED;
 
     @JsonCreator
