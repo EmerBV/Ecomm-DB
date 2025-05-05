@@ -13,7 +13,7 @@ public class StripeClientDto {
 
     // Se pueden agregar más campos conforme sea necesario para la interfaz de usuario
     private String currency = "usd";
-    private String locale = "es";
+    private String locale = "templates/notifications/es";
 
     @Getter
     @Setter

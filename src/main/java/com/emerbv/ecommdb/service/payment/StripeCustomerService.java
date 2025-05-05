@@ -39,7 +39,7 @@ public class StripeCustomerService {
         try {
             // Crear un nuevo cliente en Stripe
             Map<String, Object> customerParams = new HashMap<>();
-            customerParams.put("email", user.getEmail());
+            customerParams.put("templates/notifications/es/email", user.getEmail());
             customerParams.put("name", user.getFirstName() + " " + user.getLastName());
 
             // Opcional: añadir más datos si los tienes
@@ -82,7 +82,7 @@ public class StripeCustomerService {
 
             // Preparar parámetros de actualización
             Map<String, Object> updateParams = new HashMap<>();
-            updateParams.put("email", user.getEmail());
+            updateParams.put("templates/notifications/es/email", user.getEmail());
             updateParams.put("name", user.getFirstName() + " " + user.getLastName());
 
             // Actualizar el cliente

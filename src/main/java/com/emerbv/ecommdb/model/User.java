@@ -142,4 +142,97 @@ public class User extends Auditable {
                 .orElse(null);
     }
 
+    // Nuevos campos para soporte de notificaciones
+
+    /**
+     * Número de teléfono para notificaciones SMS
+     */
+    @Column(name = "phone_number")
+    private String phoneNumber;
+
+    /**
+     * Idioma preferido para comunicaciones
+     */
+    @Column(name = "preferred_language", length = 2)
+    private String preferredLanguage = "es";
+
+    /**
+     * Token de dispositivo para notificaciones push
+     */
+    @Column(name = "push_token")
+    private String pushToken;
+
+    /**
+     * Indica si el usuario ha verificado su email
+     */
+    @Column(name = "email_verified")
+    private Boolean emailVerified = false;
+
+    /**
+     * Fecha de verificación del email
+     */
+    @Column(name = "email_verified_at")
+    private java.time.LocalDateTime emailVerifiedAt;
+
+    /**
+     * Indica si el usuario ha verificado su número de teléfono
+     */
+    @Column(name = "phone_verified")
+    private Boolean phoneVerified = false;
+
+    /**
+     * Fecha de verificación del teléfono
+     */
+    @Column(name = "phone_verified_at")
+    private java.time.LocalDateTime phoneVerifiedAt;
+
+    /**
+     * Preferencias de notificación del usuario
+     */
+    @OneToMany(mappedBy = "userId", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<NotificationPreference> notificationPreferences = new ArrayList<>();
+
+    /**
+     * Historial de notificaciones enviadas al usuario
+     */
+    @OneToMany(mappedBy = "userId", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
+    private List<Notification> notifications;
+
+    // Métodos de utilidad para gestionar notificaciones
+
+    /**
+     * Verifica si el usuario tiene habilitadas las notificaciones para un tipo específico
+     */
+    public boolean canReceiveNotificationType(String notificationType) {
+        NotificationPreference preference = getActiveNotificationPreference();
+        if (preference == null) {
+            return true; // Si no hay preferencias, asumimos que puede recibir notificaciones
+        }
+
+        return preference.isNotificationTypeEnabled(notificationType);
+    }
+
+    /**
+     * Obtiene la preferencia de notificación activa del usuario
+     */
+    public NotificationPreference getActiveNotificationPreference() {
+        if (notificationPreferences == null || notificationPreferences.isEmpty()) {
+            return null;
+        }
+
+        return notificationPreferences.get(0); // Asumiendo que solo hay una preferencia por usuario
+    }
+
+    /**
+     * Obtiene el canal preferido para notificaciones
+     */
+    public String getPreferredNotificationChannel() {
+        NotificationPreference preference = getActiveNotificationPreference();
+        if (preference == null) {
+            return "EMAIL"; // Por defecto, email
+        }
+
+        return preference.getPreferredChannel();
+    }
+
 }
