@@ -37,6 +37,7 @@ public class PaymentService implements IPaymentService {
     private final PaymentTransactionRepository transactionRepository;
     private final CustomerPaymentMethodRepository paymentMethodRepository;
     private final StripeUtils stripeUtils;
+    private final StripeOperationService stripeOperationService;
 
     @Value("${app.payment.default-currency:eur}")
     private String defaultCurrency;
@@ -59,7 +60,7 @@ public class PaymentService implements IPaymentService {
             // Si ya existe un intento exitoso, devolver la información existente
             logger.info("Reutilizando PaymentIntent existente para clave de idempotencia: {}", idempotencyKey);
             String paymentIntentId = existingRecord.get().getEntityId();
-            PaymentIntent existingIntent = PaymentIntent.retrieve(paymentIntentId);
+            PaymentIntent existingIntent = stripeOperationService.retrievePaymentIntent(paymentIntentId);
             return new PaymentIntentResponse(existingIntent.getClientSecret(), existingIntent.getId());
         }
 
@@ -85,7 +86,8 @@ public class PaymentService implements IPaymentService {
 
             // Verificar con Stripe el estado actual
             try {
-                PaymentIntent existingIntent = PaymentIntent.retrieve(existingTransaction.get().getPaymentIntentId());
+                PaymentIntent existingIntent = stripeOperationService.retrievePaymentIntent(
+                        existingTransaction.get().getPaymentIntentId());
 
                 // Si el intent no está cancelado o fallido, podemos reutilizarlo
                 if (!"canceled".equals(existingIntent.getStatus()) &&
@@ -174,8 +176,8 @@ public class PaymentService implements IPaymentService {
                 .build();
 
         try {
-            // Crear el PaymentIntent
-            com.stripe.model.PaymentIntent intent = com.stripe.model.PaymentIntent.create(params, requestOptions);
+            // Crear el PaymentIntent con reintentos
+            PaymentIntent intent = stripeOperationService.createPaymentIntent(params, requestOptions);
 
             // Actualizar la orden con el ID del intent
             order.setPaymentIntentId(intent.getId());
@@ -224,19 +226,14 @@ public class PaymentService implements IPaymentService {
         String idempotencyKey = idempotencyService.generateIdempotencyKey();
 
         // Recuperar el PaymentIntent
-        PaymentIntent intent = PaymentIntent.retrieve(paymentIntentId);
+        PaymentIntent intent = stripeOperationService.retrievePaymentIntent(paymentIntentId);
 
         // Configurar opciones para la confirmación
         Map<String, Object> params = new HashMap<>();
 
-        // Opciones de idempotencia para la API de Stripe
-        com.stripe.net.RequestOptions requestOptions = com.stripe.net.RequestOptions.builder()
-                .setIdempotencyKey(idempotencyKey)
-                .build();
-
         try {
-            // Confirmar el PaymentIntent
-            com.stripe.model.PaymentIntent confirmedIntent = com.stripe.model.PaymentIntent.create(params, requestOptions);
+            // Confirmar el PaymentIntent con reintentos
+            PaymentIntent confirmedIntent = stripeOperationService.confirmPaymentIntent(intent, params);
 
             // Registrar la operación exitosa
             idempotencyService.recordOperation(
@@ -295,14 +292,13 @@ public class PaymentService implements IPaymentService {
 
         try {
             // Recuperar el PaymentIntent
-           PaymentIntent intent = PaymentIntent.retrieve(paymentIntentId);
+            PaymentIntent intent = stripeOperationService.retrievePaymentIntent(paymentIntentId);
 
-            // Configurar opciones de idempotencia para la API de Stripe
-            Map<String, Object> requestOptions = new HashMap<>();
-            requestOptions.put("idempotencyKey", idempotencyKey);
+            // Configurar opciones para la cancelación
+            Map<String, Object> params = new HashMap<>();
 
-            // Cancelar el PaymentIntent
-            PaymentIntent canceledIntent = intent.cancel(requestOptions);
+            // Cancelar el PaymentIntent con reintentos
+            PaymentIntent canceledIntent = stripeOperationService.cancelPaymentIntent(intent, params);
 
             // Registrar la operación exitosa
             idempotencyService.recordOperation(
@@ -348,7 +344,8 @@ public class PaymentService implements IPaymentService {
     @Transactional(readOnly = true)
     public PaymentIntent retrievePayment(String paymentIntentId) throws StripeException {
         try {
-            PaymentIntent intent = PaymentIntent.retrieve(paymentIntentId);
+            // Recuperar PaymentIntent con reintentos
+            PaymentIntent intent = stripeOperationService.retrievePaymentIntent(paymentIntentId);
 
             // Opcionalmente, actualizar la transacción local si hay cambios en el estado
             transactionRepository.findByPaymentIntentId(paymentIntentId).ifPresent(transaction -> {
@@ -397,11 +394,12 @@ public class PaymentService implements IPaymentService {
         if (order.getOrderStatus() == OrderStatus.PENDING ||
                 order.getOrderStatus() == OrderStatus.PENDING_PAYMENT) {
             try {
-                com.stripe.model.PaymentIntent intent = com.stripe.model.PaymentIntent.retrieve(paymentIntentId);
+                // Usar el servicio con reintentos
+                PaymentIntent intent = stripeOperationService.retrievePaymentIntent(paymentIntentId);
                 if ("succeeded".equals(intent.getStatus())) {
                     order.setOrderStatus(OrderStatus.PAID);
                 }
-            } catch (com.stripe.exception.StripeException e) {
+            } catch (StripeException e) {
                 logger.error("Error retrieving payment intent {} for order update: {}",
                         paymentIntentId, e.getMessage());
                 // No fallamos la operación, solo logueamos el error

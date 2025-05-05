@@ -28,6 +28,7 @@ public class StripeWebhookService {
     private final PaymentTransactionRepository transactionRepository;
     private final RefundRepository refundRepository;
     private final DisputeRepository disputeRepository;
+    private final StripeOperationService stripeOperationService;
 
     @Value("${stripe.webhook.secret}")
     private String endpointSecret;
@@ -98,11 +99,8 @@ public class StripeWebhookService {
             orderRepository.findById(Long.valueOf(orderId)).ifPresent(order -> {
                 // Actualizar estado de la orden
                 order.setOrderStatus(OrderStatus.PAID);
-
-                // Actualizar información de pago en la orden
                 order.setPaymentMethod(paymentIntent.getPaymentMethod());
                 order.setPaymentIntentId(paymentIntent.getId());
-
                 orderRepository.save(order);
                 logger.info("Order {} updated to PAID with payment method {} and intent {}",
                         orderId, paymentIntent.getPaymentMethod(), paymentIntent.getId());

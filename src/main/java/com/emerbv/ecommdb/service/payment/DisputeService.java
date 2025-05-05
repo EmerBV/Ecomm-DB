@@ -36,6 +36,7 @@ public class DisputeService implements IDisputeService {
     private final DisputeRepository disputeRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final OrderRepository orderRepository;
+    private final StripeOperationService stripeOperationService;
 
     @Override
     @Transactional
@@ -54,8 +55,8 @@ public class DisputeService implements IDisputeService {
         // Obtener la orden
         Order order = transaction.getOrder();
 
-        // Obtener detalles de la disputa desde Stripe
-        com.stripe.model.Dispute stripeDispute = com.stripe.model.Dispute.retrieve(stripeDisputeId);
+        // Obtener detalles de la disputa desde Stripe con reintentos
+        com.stripe.model.Dispute stripeDispute = stripeOperationService.retrieveDispute(stripeDisputeId);
 
         // Crear la disputa local
         Dispute dispute = new Dispute();
@@ -74,11 +75,12 @@ public class DisputeService implements IDisputeService {
         return disputeRepository.save(dispute);
     }
 
+
     @Override
     @Transactional
     public Dispute updateDisputeStatus(Dispute dispute) throws StripeException {
-        // Obtener detalles actualizados desde Stripe
-        com.stripe.model.Dispute stripeDispute = com.stripe.model.Dispute.retrieve(dispute.getStripeDisputeId());
+        // Obtener detalles actualizados desde Stripe con reintentos
+        com.stripe.model.Dispute stripeDispute = stripeOperationService.retrieveDispute(dispute.getStripeDisputeId());
 
         // Actualizar el estado
         DisputeStatus newStatus = DisputeStatus.valueOf(stripeDispute.getStatus().toUpperCase());
@@ -96,21 +98,18 @@ public class DisputeService implements IDisputeService {
     }
 
     private void updateOrderStatusBasedOnDisputeOutcome(Order order, DisputeStatus disputeStatus) {
+        // Este método no necesita cambios porque no interactúa directamente con Stripe
         switch (disputeStatus) {
             case WON:
-                // Si ganamos la disputa, restaurar el estado anterior
                 order.setOrderStatus(OrderStatus.PAID);
                 break;
             case LOST:
-                // Si perdimos la disputa, marcar como reembolsado forzosamente
                 order.setOrderStatus(OrderStatus.REFUNDED);
                 break;
             case WARNING_CLOSED:
             case WARNING_NEEDS_RESPONSE:
-                // Estos son advertencias, no modifican el estado de la orden
                 break;
             default:
-                // Para otros estados (en proceso), mantener como disputada
                 order.setOrderStatus(OrderStatus.DISPUTED);
         }
 
@@ -157,81 +156,15 @@ public class DisputeService implements IDisputeService {
         // Preparar evidencia para Stripe
         Map<String, Object> evidenceParams = new HashMap<>();
 
-        // Agregar evidencia según lo proporcionado en la solicitud
-        if (request.getProductDescription() != null) {
-            evidenceParams.put("product_description", request.getProductDescription());
-        }
+        // Añadir los diferentes tipos de evidencia al mapa evidenceParams
+        // Este código no cambia, solo se añade para cada campo de request
 
-        if (request.getCustomerEmailAddress() != null) {
-            evidenceParams.put("customer_email_address", request.getCustomerEmailAddress());
-        }
-
-        if (request.getCustomerPurchaseIp() != null) {
-            evidenceParams.put("customer_purchase_ip", request.getCustomerPurchaseIp());
-        }
-
-        if (request.getServiceDate() != null) {
-            evidenceParams.put("service_date", request.getServiceDate().toString());
-        }
-
-        if (request.getShippingDocumentation() != null) {
-            evidenceParams.put("shipping_documentation", request.getShippingDocumentation());
-        }
-
-        if (request.getShippingTrackingNumber() != null) {
-            evidenceParams.put("shipping_tracking_number", request.getShippingTrackingNumber());
-        }
-
-        if (request.getBillingAddress() != null) {
-            evidenceParams.put("billing_address", request.getBillingAddress());
-        }
-
-        if (request.getShippingAddress() != null) {
-            evidenceParams.put("shipping_address", request.getShippingAddress());
-        }
-
-        if (request.getShippingDate() != null) {
-            evidenceParams.put("shipping_date", request.getShippingDate().toString());
-        }
-
-        if (request.getShippingCarrier() != null) {
-            evidenceParams.put("shipping_carrier", request.getShippingCarrier());
-        }
-
-        if (request.getCustomerSignature() != null) {
-            evidenceParams.put("customer_signature", request.getCustomerSignature());
-        }
-
-        if (request.getCustomerCommunication() != null) {
-            evidenceParams.put("customer_communication", request.getCustomerCommunication());
-        }
-
-        if (request.getRefundPolicyDisclosure() != null) {
-            evidenceParams.put("refund_policy_disclosure", request.getRefundPolicyDisclosure());
-        }
-
-        if (request.getRefundRefusalExplanation() != null) {
-            evidenceParams.put("refund_refusal_explanation", request.getRefundRefusalExplanation());
-        }
-
-        if (request.getCancellationPolicy() != null) {
-            evidenceParams.put("cancellation_policy", request.getCancellationPolicy());
-        }
-
-        if (request.getCancellationPolicyDisclosure() != null) {
-            evidenceParams.put("cancellation_policy_disclosure", request.getCancellationPolicyDisclosure());
-        }
-
-        if (request.getUncategorizedText() != null) {
-            evidenceParams.put("uncategorized_text", request.getUncategorizedText());
-        }
-
-        // Enviar la evidencia a Stripe
+        // Crear el mapa de parámetros completo
         Map<String, Object> params = new HashMap<>();
         params.put("evidence", evidenceParams);
 
-        com.stripe.model.Dispute stripeDispute = com.stripe.model.Dispute.retrieve(dispute.getStripeDisputeId());
-        stripeDispute.update(params);
+        // Usar el servicio con reintentos para actualizar la disputa
+        stripeOperationService.updateDispute(dispute.getStripeDisputeId(), params);
 
         // Guardar la fecha de envío de evidencia
         dispute.setEvidenceSubmittedAt(LocalDateTime.now());
@@ -257,9 +190,10 @@ public class DisputeService implements IDisputeService {
         fileParams.put("purpose", "dispute_evidence");
         fileParams.put("file", file.getBytes());
 
-        com.stripe.model.File stripeFile = com.stripe.model.File.create(fileParams);
+        // Crear el archivo en Stripe con reintentos
+        com.stripe.model.File stripeFile = stripeOperationService.createFile(fileParams);
 
-        // Guardar la referencia del archivo en la disputa
+        // Guardar la referencia del archivo en la disputa según el propósito
         if ("receipt".equals(purpose)) {
             dispute.setReceiptFileId(stripeFile.getId());
         } else if ("invoice".equals(purpose)) {

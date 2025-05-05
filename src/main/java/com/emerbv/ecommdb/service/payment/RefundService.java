@@ -12,6 +12,7 @@ import com.emerbv.ecommdb.response.RefundResponse;
 import com.emerbv.ecommdb.util.StripeUtils;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
+import com.stripe.net.RequestOptions;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +35,7 @@ public class RefundService implements IRefundService {
     private final RefundRepository refundRepository;
     private final IdempotencyService idempotencyService;
     private final StripeUtils stripeUtils;
+    private final StripeOperationService stripeOperationService;
 
     @Override
     @Transactional
@@ -47,7 +49,7 @@ public class RefundService implements IRefundService {
         var existingRecord = idempotencyService.findByKey(idempotencyKey, "REFUND_CREATE");
         if (existingRecord.isPresent() && "SUCCESS".equals(existingRecord.get().getStatus())) {
             String refundId = existingRecord.get().getEntityId();
-            com.stripe.model.Refund existingRefund = com.stripe.model.Refund.retrieve(refundId);
+            com.stripe.model.Refund existingRefund = stripeOperationService.retrieveRefund(refundId);
 
             Refund localRefund = refundRepository.findByStripeRefundId(refundId)
                     .orElseThrow(() -> new ResourceNotFoundException("Reembolso local no encontrado para ID: " + refundId));
@@ -72,7 +74,7 @@ public class RefundService implements IRefundService {
         }
 
         // Obtener el PaymentIntent para validar
-        PaymentIntent paymentIntent = PaymentIntent.retrieve(order.getPaymentIntentId());
+        com.stripe.model.PaymentIntent paymentIntent = stripeOperationService.retrievePaymentIntent(order.getPaymentIntentId());
         if (!"succeeded".equals(paymentIntent.getStatus())) {
             throw new IllegalStateException("No se puede reembolsar un pago que no ha sido completado");
         }
@@ -103,13 +105,13 @@ public class RefundService implements IRefundService {
         params.put("metadata", metadata);
 
         // Opciones para la idempotencia
-        com.stripe.net.RequestOptions requestOptions = com.stripe.net.RequestOptions.builder()
+        RequestOptions requestOptions = RequestOptions.builder()
                 .setIdempotencyKey(idempotencyKey)
                 .build();
 
         try {
-            // Crear el reembolso en Stripe
-            com.stripe.model.Refund stripeRefund = com.stripe.model.Refund.create(params, requestOptions);
+            // Crear el reembolso en Stripe con reintentos
+            com.stripe.model.Refund stripeRefund = stripeOperationService.createRefund(params, requestOptions);
 
             // Crear registro local del reembolso
             Refund refund = new Refund();
@@ -158,7 +160,8 @@ public class RefundService implements IRefundService {
         Refund localRefund = refundRepository.findByStripeRefundId(refundId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reembolso no encontrado: " + refundId));
 
-        com.stripe.model.Refund stripeRefund = com.stripe.model.Refund.retrieve(refundId);
+        // Usar el servicio con reintentos
+        com.stripe.model.Refund stripeRefund = stripeOperationService.retrieveRefund(refundId);
 
         // Actualizar el estado local si ha cambiado en Stripe
         if (!localRefund.getStatus().name().equalsIgnoreCase(stripeRefund.getStatus())) {
