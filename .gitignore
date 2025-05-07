@@ -38,3 +38,6 @@ application-local.properties
 /src/main/resources/application-dev.properties
 /src/main/resources/application-local.properties
 .env
+
+# Firebase
+src/main/resources/appecomm-61cfe-firebase-adminsdk-fbsvc-f1b750f46b.json
