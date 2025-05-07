@@ -1,10 +1,164 @@
 <!DOCTYPE html>
-<html lang="en">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>¡Oferta Especial para ti!</title>
+  <style>
+    body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        margin: 0;
+        padding: 0;
+    }
+    .container {
+        width: 100%;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    .header {
+        background-color: #e74c3c;
+        color: white;
+        padding: 20px;
+        text-align: center;
+    }
+    .footer {
+        background-color: #f5f5f5;
+        padding: 20px;
+        text-align: center;
+        font-size: 12px;
+        color: #666;
+        margin-top: 20px;
+    }
+    .content {
+        padding: 20px;
+    }
+    .offer-card {
+        background-color: #f9f9f9;
+        padding: 20px;
+        border-radius: 5px;
+        margin: 20px 0;
+        text-align: center;
+    }
+    .product-image {
+        max-width: 100%;
+        height: auto;
+        margin-bottom: 15px;
+        border-radius: 5px;
+    }
+    .product-name {
+        font-size: 20px;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    .product-price {
+        font-size: 18px;
+        color: #e74c3c;
+        margin-bottom: 20px;
+    }
+    .original-price {
+        text-decoration: line-through;
+        color: #999;
+        margin-right: 10px;
+    }
+    .discount-badge {
+        background-color: #e74c3c;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 3px;
+        font-weight: bold;
+        display: inline-block;
+        margin: 10px 0;
+    }
+    .button {
+        display: inline-block;
+        padding: 12px 25px;
+        background-color: #e74c3c;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        font-weight: bold;
+    }
+    .social-links {
+        margin: 15px 0;
+    }
+    .social-links a {
+        margin: 0 10px;
+        color: #e74c3c;
+        text-decoration: none;
+    }
+    .timer {
+        background-color: #fff;
+        padding: 10px;
+        border-radius: 5px;
+        margin: 15px 0;
+        font-weight: bold;
+    }
+  </style>
 </head>
 <body>
+<div class="container">
+  <div class="header">
+    <h1>¡Oferta Especial para ti!</h1>
+  </div>
 
+  <div class="content">
+    <p>Hola <span th:text="${userName}">Usuario</span>,</p>
+
+    <p>¡Tenemos una oferta especial que no te puedes perder!</p>
+
+    <div class="offer-card">
+      <img th:if="${productImage}" th:src="${productImage}" class="product-image" alt="Imagen del producto">
+
+      <div class="product-name" th:text="${productName}">Nombre del Producto</div>
+
+      <div class="product-price">
+        <span class="original-price" th:text="${#numbers.formatDecimal(originalPrice, 1, 2) + ' €'}">99.99 €</span>
+        <span th:text="${#numbers.formatDecimal(discountedPrice, 1, 2) + ' €'}">79.99 €</span>
+      </div>
+
+      <div class="discount-badge">
+        ¡<span th:text="${discountPercentage}">20</span>% de descuento!
+      </div>
+
+      <div class="timer">
+        Esta oferta expira en: <span th:text="${timeRemaining}">24 horas</span>
+      </div>
+
+      <p>¡Aprovecha esta oportunidad única! Las existencias son limitadas.</p>
+
+      <a th:href="${productUrl}" class="button">Ver oferta</a>
+    </div>
+
+    <p>Si tienes alguna pregunta, no dudes en contactarnos.</p>
+
+    <p>¡Gracias por ser parte de nuestra comunidad!</p>
+
+    <p>Atentamente,<br>
+      Equipo de <span th:text="${storeName}">APPECOMM</span></p>
+  </div>
+
+  <div class="footer">
+    <div class="social-links">
+      <a href="#" th:href="${socialLinks.facebook}">Facebook</a>
+      <a href="#" th:href="${socialLinks.instagram}">Instagram</a>
+      <a href="#" th:href="${socialLinks.twitter}">Twitter</a>
+    </div>
+
+    <p>
+      <span th:text="${storeName}">APPECOMM</span><br>
+      <span th:text="${storeEmail}">support@appecomm.com</span><br>
+      <span th:text="${storePhone}">+34 123 456 789</span>
+    </p>
+
+    <p>© <span th:text="${year}">2025</span> <span th:text="${storeName}">APPECOMM</span>. Todos los derechos reservados.</p>
+
+    <p>
+      <small>Si no deseas recibir más emails como este, puedes <a href="#" th:href="${unsubscribeUrl}">darte de baja</a>.</small>
+    </p>
+  </div>
+</div>
 </body>
 </html>

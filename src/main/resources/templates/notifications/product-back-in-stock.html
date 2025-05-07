@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Special Offer for You!</title>
+  <title>¡Producto disponible de nuevo!</title>
   <style>
     body {
         font-family: Arial, sans-serif;
@@ -19,7 +19,7 @@
         padding: 20px;
     }
     .header {
-        background-color: #e74c3c;
+        background-color: #27ae60;
         color: white;
         padding: 20px;
         text-align: center;
@@ -35,7 +35,7 @@
     .content {
         padding: 20px;
     }
-    .offer-card {
+    .product-card {
         background-color: #f9f9f9;
         padding: 20px;
         border-radius: 5px;
@@ -55,27 +55,13 @@
     }
     .product-price {
         font-size: 18px;
-        color: #e74c3c;
+        color: #27ae60;
         margin-bottom: 20px;
-    }
-    .original-price {
-        text-decoration: line-through;
-        color: #999;
-        margin-right: 10px;
-    }
-    .discount-badge {
-        background-color: #e74c3c;
-        color: white;
-        padding: 5px 10px;
-        border-radius: 3px;
-        font-weight: bold;
-        display: inline-block;
-        margin: 10px 0;
     }
     .button {
         display: inline-block;
         padding: 12px 25px;
-        background-color: #e74c3c;
+        background-color: #27ae60;
         color: white;
         text-decoration: none;
         border-radius: 5px;
@@ -86,58 +72,44 @@
     }
     .social-links a {
         margin: 0 10px;
-        color: #e74c3c;
+        color: #27ae60;
         text-decoration: none;
-    }
-    .timer {
-        background-color: #fff;
-        padding: 10px;
-        border-radius: 5px;
-        margin: 15px 0;
-        font-weight: bold;
     }
   </style>
 </head>
 <body>
 <div class="container">
   <div class="header">
-    <h1>Special Offer for You!</h1>
+    <h1>¡Ya está disponible!</h1>
   </div>
 
   <div class="content">
-    <p>Hello <span th:text="${userName}">User</span>,</p>
+    <p>Hola <span th:text="${userName}">Usuario</span>,</p>
 
-    <p>We have a special offer you can't miss!</p>
+    <p>Nos alegra comunicarte que un producto que marcaste como favorito ya está disponible nuevamente:</p>
 
-    <div class="offer-card">
-      <img th:if="${productImage}" th:src="${productImage}" class="product-image" alt="Product Image">
+    <div class="product-card">
+      <img th:if="${productImage}" th:src="${productImage}" class="product-image" alt="Imagen del producto">
 
-      <div class="product-name" th:text="${productName}">Product Name</div>
+      <div class="product-name" th:text="${productName}">Nombre del Producto</div>
 
-      <div class="product-price">
-        <span class="original-price" th:text="${#numbers.formatDecimal(originalPrice, 1, 2) + ' €'}">99.99 €</span>
-        <span th:text="${#numbers.formatDecimal(discountedPrice, 1, 2) + ' €'}">79.99 €</span>
+      <div class="product-price" th:text="${#numbers.formatDecimal(productPrice, 1, 2) + ' €'}">99.99 €</div>
+
+      <div th:if="${hasDiscount}">
+        <p>¡Aprovecha ahora! Descuento del <strong th:text="${discountPercentage + '%'}">10%</strong></p>
       </div>
 
-      <div class="discount-badge">
-        <span th:text="${discountPercentage}">20</span>% OFF!
-      </div>
+      <p>Las existencias son limitadas. ¡No dejes pasar esta oportunidad!</p>
 
-      <div class="timer">
-        This offer expires in: <span th:text="${timeRemaining}">24 hours</span>
-      </div>
-
-      <p>Take advantage of this unique opportunity! Limited stock available.</p>
-
-      <a th:href="${productUrl}" class="button">View Offer</a>
+      <a th:href="${productUrl}" class="button">Ver producto</a>
     </div>
 
-    <p>If you have any questions, please don't hesitate to contact us.</p>
+    <p>Si tienes alguna pregunta, no dudes en contactarnos.</p>
 
-    <p>Thank you for being part of our community!</p>
+    <p>¡Gracias por tu interés en nuestros productos!</p>
 
-    <p>Best regards,<br>
-      Team at <span th:text="${storeName}">APPECOMM</span></p>
+    <p>Atentamente,<br>
+      Equipo de <span th:text="${storeName}">APPECOMM</span></p>
   </div>
 
   <div class="footer">
@@ -153,10 +125,10 @@
       <span th:text="${storePhone}">+34 123 456 789</span>
     </p>
 
-    <p>© <span th:text="${year}">2025</span> <span th:text="${storeName}">APPECOMM</span>. All rights reserved.</p>
+    <p>© <span th:text="${year}">2025</span> <span th:text="${storeName}">APPECOMM</span>. Todos los derechos reservados.</p>
 
     <p>
-      <small>If you don't want to receive more emails like this, you can <a href="#" th:href="${unsubscribeUrl}">unsubscribe</a>.</small>
+      <small>Si no deseas recibir más emails como este, puedes <a href="#" th:href="${unsubscribeUrl}">darte de baja</a>.</small>
     </p>
   </div>
 </div>

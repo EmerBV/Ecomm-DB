@@ -18,6 +18,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -196,9 +197,6 @@ public class NotificationCampaignService {
     public void sendPersonalizedRecommendations() {
         logger.info("Iniciando proceso de recomendaciones personalizadas");
 
-        // Lógica para generar recomendaciones basadas en compras anteriores
-        // De nuevo, esta es una implementación conceptual
-
         List<User> activeUsers = userRepository.findAll(); // Filtrar por usuarios activos
 
         for (User user : activeUsers) {
@@ -210,19 +208,60 @@ public class NotificationCampaignService {
                     continue;
                 }
 
-                Map<String, Object> variables = new HashMap<>();
-                variables.put("userName", user.getFirstName());
-                variables.put("recommendedProducts", recommendedProducts);
+                // Para cada producto recomendado, enviar una notificación individual
+                for (ProductDto product : recommendedProducts) {
+                    Map<String, Object> variables = new HashMap<>();
+                    
+                    // Variables básicas
+                    variables.put("userName", user.getFirstName());
+                    variables.put("productName", product.getName());
+                    variables.put("productUrl", "https://emerbv-ecommerce.com/products/" + product.getId());
+                    
+                    // Imagen del producto si está disponible
+                    if (product.getImages() != null && !product.getImages().isEmpty()) {
+                        variables.put("productImage", product.getImages().get(0).getDownloadUrl());
+                    }
+                    
+                    // Precios y descuentos
+                    BigDecimal originalPrice = product.getPrice();
+                    BigDecimal discountPercentage = BigDecimal.valueOf(product.getDiscountPercentage());
+                    BigDecimal discountAmount = originalPrice.multiply(discountPercentage).divide(BigDecimal.valueOf(100));
+                    BigDecimal discountedPrice = originalPrice.subtract(discountAmount);
+                    
+                    variables.put("originalPrice", originalPrice);
+                    variables.put("discountedPrice", discountedPrice);
+                    variables.put("discountPercentage", product.getDiscountPercentage());
+                    
+                    // Tiempo restante de la oferta (24 horas)
+                    variables.put("timeRemaining", "24 horas");
 
-                notificationService.sendUserNotification(
-                        user,
-                        NotificationType.SPECIAL_OFFER,
-                        "Productos seleccionados para ti",
-                        "templates/notifications/es",
-                        variables
-                );
+                    // Información de la tienda
+                    variables.put("storeName", "APPECOMM");
+                    variables.put("storeEmail", "support@appecomm.com");
+                    variables.put("storePhone", "+34 123 456 789");
+                    variables.put("year", java.time.Year.now().getValue());
 
-                logger.info("Recomendaciones enviadas a usuario: {}", user.getEmail());
+                    // Enlaces sociales
+                    Map<String, String> socialLinks = new HashMap<>();
+                    socialLinks.put("facebook", "https://facebook.com/emerbv");
+                    socialLinks.put("instagram", "https://instagram.com/emerbv");
+                    socialLinks.put("twitter", "https://twitter.com/emerbv");
+                    variables.put("socialLinks", socialLinks);
+
+                    // URL de cancelación de suscripción
+                    String unsubscribeToken = preferenceService.generateUnsubscribeToken(user.getId(), "RECOMMENDATIONS");
+                    variables.put("unsubscribeUrl", "https://emerbv-ecommerce.com/notifications/unsubscribe?token=" + unsubscribeToken);
+
+                    notificationService.sendUserNotification(
+                            user,
+                            NotificationType.SPECIAL_OFFER,
+                            "¡Oferta especial para ti!",
+                            user.getPreferredLanguage(),
+                            variables
+                    );
+
+                    logger.info("Recomendación enviada a usuario: {} para producto: {}", user.getEmail(), product.getName());
+                }
 
             } catch (Exception e) {
                 logger.error("Error enviando recomendaciones a usuario {}: {}", user.getId(), e.getMessage(), e);

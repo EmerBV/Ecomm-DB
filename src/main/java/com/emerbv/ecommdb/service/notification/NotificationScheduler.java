@@ -174,10 +174,6 @@ public class NotificationScheduler {
         }
 
         // 2. Obtener productos que volvieron a tener stock en las últimas 24 horas
-        // Esta lógica depende de cómo se actualice el inventario y se registren los cambios
-        // Idealmente, tendríamos un registro de cambios de inventario
-        // Por ahora, simulamos esto con productos que tienen inventario > 0
-
         List<Product> backInStockProducts = productRepository.findByStatus(com.emerbv.ecommdb.enums.ProductStatus.IN_STOCK);
 
         if (backInStockProducts.isEmpty()) {
@@ -220,10 +216,12 @@ public class NotificationScheduler {
                     try {
                         // Preparar la notificación
                         Map<String, Object> variables = new HashMap<>();
+                        
+                        // Variables básicas
                         variables.put("userName", user.getFirstName());
                         variables.put("productName", product.getName());
                         variables.put("productPrice", product.getPrice());
-                        variables.put("productUrl", "https://emerbv-ecommerce.com/products/" + product.getId());
+                        variables.put("productUrl", "https://appecomm.com/products/" + product.getId());
 
                         // Imagen del producto si está disponible
                         if (product.getImages() != null && !product.getImages().isEmpty()) {
@@ -236,16 +234,22 @@ public class NotificationScheduler {
                             variables.put("discountPercentage", product.getDiscountPercentage());
                         }
 
-                        // Preparar enlaces sociales
+                        // Información de la tienda
+                        variables.put("storeName", "APPECOMM");
+                        variables.put("storeEmail", "support@appecomm.com");
+                        variables.put("storePhone", "+34 123 456 789");
+                        variables.put("year", java.time.Year.now().getValue());
+
+                        // Enlaces sociales
                         Map<String, String> socialLinks = new HashMap<>();
-                        socialLinks.put("facebook", "https://facebook.com/emerbvstore");
-                        socialLinks.put("instagram", "https://instagram.com/emerbvstore");
-                        socialLinks.put("twitter", "https://twitter.com/emerbvstore");
+                        socialLinks.put("facebook", "https://facebook.com/appecomm");
+                        socialLinks.put("instagram", "https://instagram.com/appecomm");
+                        socialLinks.put("twitter", "https://twitter.com/appecomm");
                         variables.put("socialLinks", socialLinks);
 
-                        // Agregar URL de unsubscribe
+                        // URL de cancelación de suscripción
                         String unsubscribeToken = preferenceService.generateUnsubscribeToken(userId, "PRODUCT");
-                        variables.put("unsubscribeUrl", "https://emerbv-ecommerce.com/notifications/unsubscribe?token=" + unsubscribeToken);
+                        variables.put("unsubscribeUrl", "https://appecomm.com/notifications/unsubscribe?token=" + unsubscribeToken);
 
                         // Enviar notificación
                         notificationService.sendUserNotification(
