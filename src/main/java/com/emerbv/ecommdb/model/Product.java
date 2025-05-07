@@ -46,6 +46,8 @@ public class Product {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
+    private LocalDateTime lastStockUpdate;
+
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Variant> variants;
 

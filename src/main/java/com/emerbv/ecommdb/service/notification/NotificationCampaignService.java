@@ -157,33 +157,71 @@ public class NotificationCampaignService {
         logger.info("Iniciando proceso de notificaciones de productos en stock");
 
         // Obtener productos que volvieron a tener stock en las últimas 24 horas
-        // Esta lógica depende de cómo se actualice el inventario
-        // Aquí se necesitaría un modelo de WishList o similar
-
-        // Ejemplo conceptual:
-        /*
-        List<Product> backInStockProducts = productRepository.findProductsBackInStock(LocalDateTime.now().minusDays(1));
+        LocalDateTime cutoffTime = LocalDateTime.now().minusHours(24);
+        List<Product> backInStockProducts = productRepository.findAll().stream()
+                .filter(product -> product.getInventory() > 0)
+                .filter(product -> product.getLastStockUpdate() != null && 
+                        product.getLastStockUpdate().isAfter(cutoffTime))
+                .collect(Collectors.toList());
 
         for (Product product : backInStockProducts) {
-            List<User> interestedUsers = wishListRepository.findUsersByProductId(product.getId());
+            try {
+                // Obtener usuarios que tienen este producto en su lista de deseos
+                List<User> interestedUsers = userRepository.findAll().stream()
+                        .filter(user -> user.getWishList() != null && 
+                                user.getWishList().containsProduct(product.getId()))
+                        .collect(Collectors.toList());
 
-            for (User user : interestedUsers) {
-                Map<String, Object> variables = new HashMap<>();
-                variables.put("userName", user.getFirstName());
-                variables.put("productName", product.getName());
-                variables.put("productUrl", "/products/" + product.getId());
-                variables.put("productImage", product.getImages().isEmpty() ? "" : product.getImages().get(0).getDownloadUrl());
+                for (User user : interestedUsers) {
+                    Map<String, Object> variables = new HashMap<>();
+                    
+                    // Variables básicas
+                    variables.put("userName", user.getFirstName());
+                    variables.put("productName", product.getName());
+                    variables.put("productUrl", "https://emerbv-ecommerce.com/products/" + product.getId());
+                    
+                    // Imagen del producto si está disponible
+                    if (product.getImages() != null && !product.getImages().isEmpty()) {
+                        variables.put("productImage", product.getImages().get(0).getDownloadUrl());
+                    }
+                    
+                    // Precios
+                    variables.put("price", product.getPrice());
+                    variables.put("inventory", product.getInventory());
 
-                notificationService.sendUserNotification(
-                    user,
-                    NotificationType.PRODUCT_BACK_IN_STOCK,
-                    "¡" + product.getName() + " ya está disponible!",
-                    "es",
-                    variables
-                );
+                    // Información de la tienda
+                    variables.put("storeName", "APPECOMM");
+                    variables.put("storeEmail", "support@appecomm.com");
+                    variables.put("storePhone", "+34 123 456 789");
+                    variables.put("year", java.time.Year.now().getValue());
+
+                    // Enlaces sociales
+                    Map<String, String> socialLinks = new HashMap<>();
+                    socialLinks.put("facebook", "https://facebook.com/appecomm");
+                    socialLinks.put("instagram", "https://instagram.com/appecomm");
+                    socialLinks.put("twitter", "https://twitter.com/appecomm");
+                    variables.put("socialLinks", socialLinks);
+
+                    // URL de cancelación de suscripción
+                    String unsubscribeToken = preferenceService.generateUnsubscribeToken(user.getId(), "BACK_IN_STOCK");
+                    variables.put("unsubscribeUrl", "https://appecomm.com/notifications/unsubscribe?token=" + unsubscribeToken);
+
+                    notificationService.sendUserNotification(
+                            user,
+                            NotificationType.PRODUCT_BACK_IN_STOCK,
+                            "¡" + product.getName() + " ya está disponible!",
+                            user.getPreferredLanguage(),
+                            variables
+                    );
+
+                    logger.info("Notificación de producto en stock enviada a usuario: {} para producto: {}", 
+                            user.getEmail(), product.getName());
+                }
+            } catch (Exception e) {
+                logger.error("Error procesando notificación de producto en stock {}: {}", 
+                        product.getId(), e.getMessage(), e);
             }
         }
-        */
 
         logger.info("Proceso de notificaciones de productos en stock completado");
     }
