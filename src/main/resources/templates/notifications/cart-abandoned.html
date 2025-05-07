@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>¿Olvidaste algo en tu carrito?</title>
+  <style>
+    body {
+        font-family: Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        margin: 0;
+        padding: 0;
+    }
+    .container {
+        width: 100%;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    .header {
+        background-color: #f8a100;
+        color: white;
+        padding: 20px;
+        text-align: center;
+    }
+    .footer {
+        background-color: #f5f5f5;
+        padding: 20px;
+        text-align: center;
+        font-size: 12px;
+        color: #666;
+        margin-top: 20px;
+    }
+    .content {
+        padding: 20px;
+    }
+    .cart-items {
+        background-color: #f9f9f9;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 20px 0;
+    }
+    .item {
+        display: flex;
+        justify-content: space-between;
+        border-bottom: 1px solid #eee;
+        padding: 10px 0;
+    }
+    .item:last-child {
+        border-bottom: none;
+    }
+    .total {
+        font-weight: bold;
+        font-size: 18px;
+        text-align: right;
+        margin-top: 10px;
+    }
+    .button {
+        display: inline-block;
+        padding: 10px 20px;
+        background-color: #f8a100;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        margin: 20px 0;
+        text-align: center;
+    }
+    .social-links {
+        margin: 15px 0;
+    }
+    .social-links a {
+        margin: 0 10px;
+        color: #f8a100;
+        text-decoration: none;
+    }
+    .offer-badge {
+        background-color: #e74c3c;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 3px;
+        font-weight: bold;
+        display: inline-block;
+        margin: 10px 0;
+    }
+    .item-image {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        margin-right: 10px;
+    }
+    .flex {
+        display: flex;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>¡Hey! Hay cosas en tu carrito</h1>
+  </div>
+
+  <div class="content">
+    <p>Hola <span th:text="${userName}">Usuario</span>,</p>
+
+    <p>Notamos que has dejado algunos productos en tu carrito. No te preocupes, los guardamos para ti:</p>
+
+    <div class="cart-items">
+      <h3>Tu carrito te espera:</h3>
+
+      <div th:each="item : ${cartItems}" class="item">
+        <div class="flex">
+          <img th:if="${item.product.images != null and not #lists.isEmpty(item.product.images)}"
+               th:src="${item.product.images[0].downloadUrl}"
+               class="item-image" alt="Imagen del producto">
+          <div>
+            <strong th:text="${item.product.name}">Producto</strong>
+            <p th:if="${item.variantName}" th:text="${item.variantName}">Variante</p>
+            <p>Cantidad: <span th:text="${item.quantity}">1</span></p>
+          </div>
+        </div>
+        <div>
+          <span th:text="${#numbers.formatDecimal(item.totalPrice, 1, 2) + ' €'}">99.99 €</span>
+        </div>
+      </div>
+
+      <div class="total">
+        Total: <span th:text="${#numbers.formatDecimal(totalAmount, 1, 2) + ' €'}">99.99 €</span>
+      </div>
+    </div>
+
+    <!-- Oferta especial opcional -->
+    <div th:if="${hasSpecialOffer}">
+      <p><span class="offer-badge">¡OFERTA ESPECIAL!</span></p>
+      <p>Completa tu compra en las próximas 24 horas y recibe un <strong th:text="${discountPercentage + '%'}">10%</strong> de descuento.</p>
+      <p>Utiliza el código: <strong th:text="${discountCode}">VUELVE10</strong></p>
+    </div>
+
+    <p>¿Quieres completar tu compra? Es muy fácil, solo tienes que hacer clic en el botón:</p>
+
+    <p style="text-align: center;">
+      <a th:href="${cartRecoveryUrl}" class="button">Recuperar mi carrito</a>
+    </p>
+
+    <p>Si necesitas ayuda o tienes alguna pregunta, no dudes en contactarnos.</p>
+
+    <p>¡Esperamos verte pronto!</p>
+
+    <p>Atentamente,<br>
+      Equipo de <span th:text="${storeName}">EmerBV Store</span></p>
+  </div>
+
+  <div class="footer">
+    <div class="social-links">
+      <a href="#" th:href="${socialLinks.facebook}">Facebook</a>
+      <a href="#" th:href="${socialLinks.instagram}">Instagram</a>
+      <a href="#" th:href="${socialLinks.twitter}">Twitter</a>
+    </div>
+
+    <p>
+      <span th:text="${storeName}">EmerBV Store</span><br>
+      <span th:text="${storeEmail}">support@emerbv-ecommerce.com</span><br>
+      <span th:text="${storePhone}">+34 123 456 789</span>
+    </p>
+
+    <p>© <span th:text="${year}">2025</span> <span th:text="${storeName}">EmerBV Store</span>. Todos los derechos reservados.</p>
+
+    <p>
+      <small>Si no deseas recibir más emails como este, puedes <a href="#" th:href="${unsubscribeUrl}">darte de baja</a>.</small>
+    </p>
+  </div>
+</div>
+</body>
+</html>

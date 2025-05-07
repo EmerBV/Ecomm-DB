@@ -1,0 +1,1 @@
+APPECOMM: ¡Hola ${userName}! Tu pedido #${orderId} ha sido enviado y está en camino. Seguimiento: ${trackingUrl}. ¡Gracias por tu compra!
