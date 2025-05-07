@@ -36,6 +36,7 @@ public class NotificationCampaignService {
     private final ProductRepository productRepository;
     private final ICartService cartService;
     private final IProductService productService;
+    private final NotificationPreferenceService preferenceService;
 
     /**
      * Tarea programada para enviar notificaciones de carritos abandonados
@@ -71,26 +72,67 @@ public class NotificationCampaignService {
                     continue;
                 }
 
-                // Convertir el carrito a DTO para las plantillas
-                CartDto cartDto = cartService.convertToDto(cart);
-
-                // Preparar variables para la plantilla
-                Map<String, Object> variables = new HashMap<>();
-                variables.put("userName", user.getFirstName());
-                variables.put("cartItems", cartDto.getItems());
-                variables.put("itemCount", cartDto.getItems().size());
-                variables.put("totalAmount", cartDto.getTotalAmount());
-
-                // Generar URL para recuperar el carrito (con un token para seguridad)
+                // Generar URL con token seguro para recuperar el carrito
                 String cartRecoveryUrl = generateCartRecoveryUrl(cart.getId(), user.getId());
+
+                // Preparar la notificación
+                Map<String, Object> variables = new HashMap<>();
+                
+                // Variables básicas
+                variables.put("userName", user.getFirstName());
+                variables.put("cartItems", cart.getItems().stream()
+                    .map(item -> {
+                        Map<String, Object> itemMap = new HashMap<>();
+                        Map<String, Object> productMap = new HashMap<>();
+                        productMap.put("name", item.getProduct().getName());
+                        productMap.put("images", item.getProduct().getImages().stream()
+                            .map(image -> {
+                                Map<String, String> imageMap = new HashMap<>();
+                                imageMap.put("downloadUrl", image.getDownloadUrl());
+                                return imageMap;
+                            })
+                            .toList());
+                        itemMap.put("product", productMap);
+                        itemMap.put("variantName", item.getVariantName());
+                        itemMap.put("quantity", item.getQuantity());
+                        itemMap.put("totalPrice", item.getTotalPrice());
+                        return itemMap;
+                    })
+                    .toList());
+                variables.put("totalAmount", cart.getTotalAmount());
                 variables.put("cartRecoveryUrl", cartRecoveryUrl);
+
+                // Añadir una oferta especial si queremos incentivar la compra
+                boolean hasSpecialOffer = new Random().nextBoolean(); // 50% de probabilidad
+                if (hasSpecialOffer) {
+                    variables.put("hasSpecialOffer", true);
+                    variables.put("discountPercentage", 10);
+                    variables.put("discountCode", "VUELVE10");
+                }
+
+                // Información de la tienda
+                variables.put("storeName", "APPECOMM");
+                variables.put("storeEmail", "support@appecomm.com");
+                variables.put("storePhone", "+34 123 456 789");
+                variables.put("year", java.time.Year.now().getValue());
+
+                // Enlaces sociales
+                Map<String, String> socialLinks = new HashMap<>();
+                socialLinks.put("facebook", "https://facebook.com/appecomm");
+                socialLinks.put("instagram", "https://instagram.com/appecomm");
+                socialLinks.put("twitter", "https://twitter.com/appecomm");
+                variables.put("socialLinks", socialLinks);
+
+                // URL de cancelación de suscripción
+                String unsubscribeToken = preferenceService.generateUnsubscribeToken(user.getId(), "CART");
+                variables.put("unsubscribeUrl", "https://appecomm.com/notifications/unsubscribe?token=" + unsubscribeToken);
 
                 // Enviar la notificación
                 notificationService.sendUserNotification(
                         user,
                         NotificationType.CART_ABANDONED,
                         "¿Olvidaste algo en tu carrito?",
-                        "templates/notifications/es", // Idioma por defecto, podría obtenerse de preferencias
+                        user.getPreferredLanguage(),
                         variables
                 );
 

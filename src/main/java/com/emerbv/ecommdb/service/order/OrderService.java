@@ -3,6 +3,7 @@ package com.emerbv.ecommdb.service.order;
 import com.emerbv.ecommdb.dto.OrderDto;
 import com.emerbv.ecommdb.dto.OrderItemDto;
 import com.emerbv.ecommdb.enums.OrderStatus;
+import com.emerbv.ecommdb.enums.NotificationType;
 import com.emerbv.ecommdb.exceptions.ResourceNotFoundException;
 import com.emerbv.ecommdb.model.*;
 import com.emerbv.ecommdb.repository.OrderRepository;
@@ -10,6 +11,7 @@ import com.emerbv.ecommdb.repository.ProductRepository;
 import com.emerbv.ecommdb.repository.ShippingDetailsRepository;
 import com.emerbv.ecommdb.repository.VariantRepository;
 import com.emerbv.ecommdb.service.cart.CartService;
+import com.emerbv.ecommdb.service.notification.INotificationService;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
@@ -19,7 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -33,6 +37,7 @@ public class OrderService implements IOrderService {
     private final CartService cartService;
     private final ShippingDetailsRepository shippingDetailsRepository;
     private final ModelMapper modelMapper;
+    private final INotificationService notificationService;
 
     @Transactional
     @Override
@@ -71,6 +76,9 @@ public class OrderService implements IOrderService {
 
         // Limpiar el carrito
         cartService.clearCart(cart.getId());
+
+        // Enviar notificación de confirmación de pedido
+        sendOrderConfirmationNotification(savedOrder);
 
         return savedOrder;
     }
@@ -266,5 +274,72 @@ public class OrderService implements IOrderService {
                 orderId, paymentIntentId, paymentMethodId, order.getOrderStatus());
 
         return orderRepository.save(order);
+    }
+
+    private void sendOrderConfirmationNotification(Order order) {
+        try {
+            Map<String, Object> variables = new HashMap<>();
+            
+            // Variables básicas del pedido
+            variables.put("orderId", order.getOrderId());
+            variables.put("userName", order.getUser().getFirstName() + " " + order.getUser().getLastName());
+            variables.put("orderStatus", order.getOrderStatus().name());
+            variables.put("orderUrl", "https://emerbv-ecommerce.com/orders/" + order.getOrderId());
+            
+            // Detalles de los productos
+            variables.put("orderItems", order.getOrderItems().stream()
+                    .map(item -> {
+                        Map<String, Object> itemMap = new HashMap<>();
+                        itemMap.put("productName", item.getProduct().getName());
+                        itemMap.put("variantName", item.getVariantName());
+                        itemMap.put("quantity", item.getQuantity());
+                        itemMap.put("totalPrice", item.getTotalPrice());
+                        return itemMap;
+                    })
+                    .toList());
+            
+            // Monto total
+            variables.put("totalAmount", order.getTotalAmount());
+            
+            // Dirección de envío
+            ShippingDetails shipping = order.getShippingDetails();
+            String fullAddress = String.format("%s, %s, %s %s, %s", 
+                shipping.getAddress(),
+                shipping.getCity(),
+                shipping.getState(),
+                shipping.getPostalCode(),
+                shipping.getCountry());
+            variables.put("shippingAddress", fullAddress);
+            
+            // Información de la tienda
+            variables.put("storeName", "APPECOMM");
+            variables.put("storeEmail", "support@appecomm.com");
+            variables.put("storePhone", "+34 123 456 789");
+            variables.put("year", java.time.Year.now().getValue());
+            
+            // Enlaces sociales
+            Map<String, String> socialLinks = new HashMap<>();
+            socialLinks.put("facebook", "https://facebook.com/emerbv");
+            socialLinks.put("instagram", "https://instagram.com/emerbv");
+            socialLinks.put("twitter", "https://twitter.com/emerbv");
+            variables.put("socialLinks", socialLinks);
+            
+            // URL de cancelación de suscripción
+            variables.put("unsubscribeUrl", "https://appecomm.com/unsubscribe?email=" +
+                order.getUser().getEmail());
+
+            notificationService.sendUserNotification(
+                order.getUser(),
+                NotificationType.ORDER_CONFIRMATION,
+                "Confirmación de tu pedido #" + order.getOrderId(),
+                "es",
+                variables
+            );
+
+            logger.info("Notificación de confirmación de pedido enviada para el pedido #{}", order.getOrderId());
+        } catch (Exception e) {
+            logger.error("Error al enviar la notificación de confirmación de pedido para el pedido #{}: {}", 
+                order.getOrderId(), e.getMessage());
+        }
     }
 }

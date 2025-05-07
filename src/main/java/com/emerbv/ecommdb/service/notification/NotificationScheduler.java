@@ -85,8 +85,28 @@ public class NotificationScheduler {
 
                 // Preparar la notificación
                 Map<String, Object> variables = new HashMap<>();
+                
+                // Variables básicas
                 variables.put("userName", user.getFirstName());
-                variables.put("cartItems", cartService.convertToDto(cart).getItems());
+                variables.put("cartItems", cart.getItems().stream()
+                    .map(item -> {
+                        Map<String, Object> itemMap = new HashMap<>();
+                        Map<String, Object> productMap = new HashMap<>();
+                        productMap.put("name", item.getProduct().getName());
+                        productMap.put("images", item.getProduct().getImages().stream()
+                            .map(image -> {
+                                Map<String, String> imageMap = new HashMap<>();
+                                imageMap.put("downloadUrl", image.getDownloadUrl());
+                                return imageMap;
+                            })
+                            .toList());
+                        itemMap.put("product", productMap);
+                        itemMap.put("variantName", item.getVariantName());
+                        itemMap.put("quantity", item.getQuantity());
+                        itemMap.put("totalPrice", item.getTotalPrice());
+                        return itemMap;
+                    })
+                    .toList());
                 variables.put("totalAmount", cart.getTotalAmount());
                 variables.put("cartRecoveryUrl", cartRecoveryUrl);
 
@@ -98,16 +118,22 @@ public class NotificationScheduler {
                     variables.put("discountCode", "VUELVE10");
                 }
 
-                // Preparar enlaces sociales
+                // Información de la tienda
+                variables.put("storeName", "APPECOMM");
+                variables.put("storeEmail", "support@appecomm.com");
+                variables.put("storePhone", "+34 123 456 789");
+                variables.put("year", java.time.Year.now().getValue());
+
+                // Enlaces sociales
                 Map<String, String> socialLinks = new HashMap<>();
-                socialLinks.put("facebook", "https://facebook.com/emerbvstore");
-                socialLinks.put("instagram", "https://instagram.com/emerbvstore");
-                socialLinks.put("twitter", "https://twitter.com/emerbvstore");
+                socialLinks.put("facebook", "https://facebook.com/appecomm");
+                socialLinks.put("instagram", "https://instagram.com/appecomm");
+                socialLinks.put("twitter", "https://twitter.com/appecomm");
                 variables.put("socialLinks", socialLinks);
 
-                // Agregar URL de unsubscribe
+                // URL de cancelación de suscripción
                 String unsubscribeToken = preferenceService.generateUnsubscribeToken(userId, "CART");
-                variables.put("unsubscribeUrl", "https://emerbv-ecommerce.com/notifications/unsubscribe?token=" + unsubscribeToken);
+                variables.put("unsubscribeUrl", "https://appecomm.com/notifications/unsubscribe?token=" + unsubscribeToken);
 
                 // Enviar notificación
                 notificationService.sendUserNotification(
