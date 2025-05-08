@@ -11,6 +11,10 @@ public class PaymentRequest {
     private String receiptEmail;
     private String description;
     private boolean savePaymentMethod; // Para guardar el método después del pago
-
     private String idempotencyKey;
+
+    // Campos para Apple Pay
+    private boolean applePay;
+    private String applePayToken;
+    private String applePayPaymentMethod;
 }

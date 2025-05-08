@@ -10,10 +10,15 @@ import lombok.Setter;
 @Data
 public class StripeClientDto {
     private String publicKey;
+    private String currency = "eur";
+    //private String locale = "templates/notifications/es";
+    private String locale = "es";
 
-    // Se pueden agregar más campos conforme sea necesario para la interfaz de usuario
-    private String currency = "usd";
-    private String locale = "templates/notifications/es";
+    private boolean applePayEnabled = true;
+    private String applePayMerchantId;
+    private String applePayCountry = "ES"; // Cambia según tu país
+    private String applePayCurrency = "EUR"; // Cambia según tu moneda
+    private String applePayLabel = "APPECOMM"; // Nombre que se mostrará en Apple Pay
 
     @Getter
     @Setter

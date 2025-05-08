@@ -6,9 +6,12 @@ import com.emerbv.ecommdb.model.*;
 import com.emerbv.ecommdb.repository.CustomerPaymentMethodRepository;
 import com.emerbv.ecommdb.repository.OrderRepository;
 import com.emerbv.ecommdb.repository.PaymentTransactionRepository;
+import com.emerbv.ecommdb.request.ApplePaySessionRequest;
 import com.emerbv.ecommdb.request.PaymentRequest;
+import com.emerbv.ecommdb.response.ApplePayMerchantSessionResponse;
 import com.emerbv.ecommdb.response.PaymentIntentResponse;
 import com.emerbv.ecommdb.util.StripeUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stripe.exception.StripeException;
 import com.stripe.model.PaymentIntent;
 import com.stripe.net.RequestOptions;
@@ -20,7 +23,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.math.BigDecimal;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -30,17 +39,33 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class PaymentService implements IPaymentService {
-
     private static final Logger logger = LoggerFactory.getLogger(PaymentService.class);
+
     private final IdempotencyService idempotencyService;
     private final OrderRepository orderRepository;
     private final PaymentTransactionRepository transactionRepository;
     private final CustomerPaymentMethodRepository paymentMethodRepository;
     private final StripeUtils stripeUtils;
     private final StripeOperationService stripeOperationService;
+    private final ObjectMapper objectMapper;
 
     @Value("${app.payment.default-currency:eur}")
     private String defaultCurrency;
+
+    @Value("${stripe.apple-pay.merchant-id}")
+    private String applePayMerchantId;
+
+    @Value("${stripe.apple-pay.merchant-domain}")
+    private String applePayMerchantDomain;
+
+    @Value("${stripe.apple-pay.merchant-display-name}")
+    private String applePayMerchantDisplayName;
+
+    @Value("${stripe.apple-pay.certificate-path}")
+    private String applePayCertificatePath;
+
+    @Value("${stripe.apple-pay.certificate-password}")
+    private String applePayCertificatePassword;
 
     @Override
     @Transactional
@@ -133,8 +158,28 @@ public class PaymentService implements IPaymentService {
             params.put("receipt_email", paymentRequest.getReceiptEmail());
         }
 
+        if (paymentRequest.isApplePay() && StringUtils.hasText(paymentRequest.getApplePayToken())) {
+            logger.info("Procesando pago con Apple Pay para la orden: {}", paymentRequest.getOrderId());
+
+            // Para Apple Pay, usamos un método diferente
+            params.put("payment_method_data", Map.of(
+                    "type", "card",
+                    "card", Map.of(
+                            "token", paymentRequest.getApplePayToken()
+                    )
+            ));
+
+            // Y confirmamos inmediatamente
+            params.put("confirm", true);
+
+            // Añadir método de pago para rastreo
+            if (StringUtils.hasText(paymentRequest.getApplePayPaymentMethod())) {
+                params.put("payment_method", paymentRequest.getApplePayPaymentMethod());
+            }
+        }
+
         // Si se proporcionó un PaymentMethod, añadirlo al intent
-        if (paymentRequest.getPaymentMethodId() != null) {
+        else if (paymentRequest.getPaymentMethodId() != null) {
             params.put("payment_method", paymentRequest.getPaymentMethodId());
         }
 
@@ -410,5 +455,50 @@ public class PaymentService implements IPaymentService {
                 orderId, paymentIntentId, paymentMethodId, order.getOrderStatus());
 
         return orderRepository.save(order);
+    }
+
+    @Override
+    public ApplePayMerchantSessionResponse validateApplePayMerchant(ApplePaySessionRequest request) throws Exception {
+        try {
+            URL url = new URL(request.getValidationURL());
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setDoOutput(true);
+
+            // Preparar datos para la solicitud
+            Map<String, Object> requestData = new HashMap<>();
+            requestData.put("merchantIdentifier", applePayMerchantId);
+            requestData.put("displayName", applePayMerchantDisplayName);
+            requestData.put("initiative", "web");
+            requestData.put("initiativeContext", request.getDomain());
+
+            // Enviar la solicitud
+            try (OutputStream os = connection.getOutputStream()) {
+                byte[] input = objectMapper.writeValueAsBytes(requestData);
+                os.write(input, 0, input.length);
+            }
+
+            // Verificar respuesta HTTP
+            if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                throw new Exception("Error validating Apple Pay merchant: HTTP error code " + connection.getResponseCode());
+            }
+
+            // Leer la respuesta
+            StringBuilder responseContent = new StringBuilder();
+            try (BufferedReader br = new BufferedReader(
+                    new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    responseContent.append(line);
+                }
+            }
+
+            // Convertir la respuesta a objeto
+            return objectMapper.readValue(responseContent.toString(), ApplePayMerchantSessionResponse.class);
+        } catch (Exception e) {
+            logger.error("Error validating Apple Pay merchant: {}", e.getMessage(), e);
+            throw new Exception("Error validating Apple Pay merchant: " + e.getMessage(), e);
+        }
     }
 }

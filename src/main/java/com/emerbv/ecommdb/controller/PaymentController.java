@@ -3,8 +3,10 @@ package com.emerbv.ecommdb.controller;
 import com.emerbv.ecommdb.dto.OrderDto;
 import com.emerbv.ecommdb.exceptions.ResourceNotFoundException;
 import com.emerbv.ecommdb.model.Order;
+import com.emerbv.ecommdb.request.ApplePaySessionRequest;
 import com.emerbv.ecommdb.request.PaymentRequest;
 import com.emerbv.ecommdb.response.ApiResponse;
+import com.emerbv.ecommdb.response.ApplePayMerchantSessionResponse;
 import com.emerbv.ecommdb.response.PaymentIntentResponse;
 import com.emerbv.ecommdb.service.order.IOrderService;
 import com.emerbv.ecommdb.service.payment.IPaymentService;
@@ -189,6 +191,18 @@ public class PaymentController {
         } catch (Exception e) {
             logger.error("Error processing webhook: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Webhook processing failed: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/apple-pay/validate-merchant")
+    public ResponseEntity<ApiResponse> validateApplePayMerchant(@RequestBody ApplePaySessionRequest request) {
+        try {
+            ApplePayMerchantSessionResponse sessionResponse = paymentService.validateApplePayMerchant(request);
+            return ResponseEntity.ok(new ApiResponse("Apple Pay merchant validated successfully", sessionResponse));
+        } catch (Exception e) {
+            logger.error("Error validating Apple Pay merchant: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("Failed to validate Apple Pay merchant: " + e.getMessage(), null));
         }
     }
 }

@@ -69,6 +69,16 @@ public class StripeWebhookService {
             case "payment_intent.canceled":
                 handlePaymentIntentCanceled((PaymentIntent) stripeObject);
                 break;
+            case "payment_method.attached":
+                if (stripeObject instanceof PaymentMethod) {
+                    PaymentMethod paymentMethod = (PaymentMethod) stripeObject;
+                    // Si es un Apple Pay, podemos realizar alguna acción específica
+                    if (paymentMethod.getCard() != null && "apple_pay".equals(paymentMethod.getCard().getWallet().getType())) {
+                        logger.info("Apple Pay payment method attached: {}", paymentMethod.getId());
+                        // Lógica adicional si es necesaria
+                    }
+                }
+                break;
             case "charge.refunded":
                 handleChargeRefunded((Charge) stripeObject);
                 break;

@@ -41,3 +41,10 @@ application-local.properties
 
 # Firebase
 /src/main/resources/appecomm-61cfe-firebase-adminsdk-fbsvc-f1b750f46b.json
+
+# Apple Pay Configuration
+stripe.apple-pay.merchant-id=YOUR_APPLE_PAY_MERCHANT_ID
+stripe.apple-pay.merchant-domain=your-domain.com
+stripe.apple-pay.merchant-display-name=Your Store Name
+stripe.apple-pay.certificate-path=/path/to/your/apple-pay/certificate.p12
+stripe.apple-pay.certificate-password=your-certificate-password
