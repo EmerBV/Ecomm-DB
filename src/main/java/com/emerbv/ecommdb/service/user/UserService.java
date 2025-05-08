@@ -8,6 +8,7 @@ import com.emerbv.ecommdb.exceptions.ResourceNotFoundException;
 import com.emerbv.ecommdb.model.CustomerPaymentMethod;
 import com.emerbv.ecommdb.model.Order;
 import com.emerbv.ecommdb.model.Role;
+import com.emerbv.ecommdb.model.ShippingDetails;
 import com.emerbv.ecommdb.model.User;
 import com.emerbv.ecommdb.repository.OrderRepository;
 import com.emerbv.ecommdb.repository.UserRepository;
@@ -127,6 +128,14 @@ public class UserService implements IUserService {
     @Transactional(readOnly = true)
     public UserDto convertUserToDto(User user) {
         UserDto userDto = modelMapper.map(user, UserDto.class);
+
+        // Filtrar solo las direcciones de envío activas
+        if (user.getShippingDetails() != null) {
+            List<ShippingDetails> activeShippingDetails = user.getShippingDetails().stream()
+                    .filter(ShippingDetails::isActive)
+                    .collect(Collectors.toList());
+            userDto.setShippingDetails(activeShippingDetails);
+        }
 
         // Mapeamos los métodos de pago si existen
         if (user.getPaymentMethods() != null && !user.getPaymentMethods().isEmpty()) {

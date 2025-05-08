@@ -28,6 +28,8 @@ public class ShippingDetails {
     private String fullName;
     private boolean isDefault;
 
+    private boolean active = true;
+
     @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "user_id")
@@ -52,6 +54,7 @@ public class ShippingDetails {
         copy.setPhoneNumber(this.phoneNumber);
         copy.setFullName(this.fullName);
         copy.setUser(this.user);
+        copy.setActive(this.active);
         return copy;
     }
 }

@@ -9,4 +9,8 @@ import java.util.Optional;
 public interface ShippingDetailsRepository extends JpaRepository<ShippingDetails, Long> {
     List<ShippingDetails> findByUserId(Long userId);
     Optional<ShippingDetails> findByUserIdAndIsDefaultTrue(Long userId);
+
+    List<ShippingDetails> findByUserIdAndActiveTrue(Long userId);
+    Optional<ShippingDetails> findByUserIdAndIsDefaultTrueAndActiveTrue(Long userId);
+    Optional<ShippingDetails> findByIdAndActiveTrue(Long id);
 }

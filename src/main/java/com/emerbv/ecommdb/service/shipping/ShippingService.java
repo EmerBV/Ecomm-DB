@@ -44,6 +44,7 @@ public class ShippingService implements IShippingService {
             // Si es una nueva dirección
             ShippingDetails newDetails = new ShippingDetails();
             newDetails.setUser(user);
+            newDetails.setActive(true);
             updateShippingDetailsFields(newDetails, request);
 
             // Si es la primera dirección o está marcada como predeterminada
@@ -88,13 +89,13 @@ public class ShippingService implements IShippingService {
 
     @Override
     public List<ShippingDetails> getShippingDetailsByUserId(Long userId) {
-        return shippingDetailsRepository.findByUserId(userId);
+        return shippingDetailsRepository.findByUserIdAndActiveTrue(userId);
     }
 
     @Override
     public ShippingDetails getDefaultShippingDetails(Long userId) {
-        return shippingDetailsRepository.findByUserIdAndIsDefaultTrue(userId)
-                .orElseGet(() -> shippingDetailsRepository.findByUserId(userId).stream()
+        return shippingDetailsRepository.findByUserIdAndIsDefaultTrueAndActiveTrue(userId)
+                .orElseGet(() -> shippingDetailsRepository.findByUserIdAndActiveTrue(userId).stream()
                         .findFirst()
                         .orElse(null));
     }
@@ -104,7 +105,7 @@ public class ShippingService implements IShippingService {
     public ShippingDetails setDefaultShippingAddress(Long userId, Long addressId) {
         // Verificar si la dirección pertenece al usuario
         ShippingDetails addressToMakeDefault = shippingDetailsRepository.findById(addressId)
-                .filter(address -> address.getUser().getId().equals(userId))
+                .filter(address -> address.getUser().getId().equals(userId) && address.isActive())
                 .orElseThrow(() -> new ResourceNotFoundException("Shipping address not found or not owned by this user"));
 
         // Desactivar todas las direcciones predeterminadas
@@ -122,11 +123,12 @@ public class ShippingService implements IShippingService {
                 .filter(address -> address.getUser().getId().equals(userId))
                 .orElseThrow(() -> new ResourceNotFoundException("Shipping address not found or not owned by this user"));
 
-        shippingDetailsRepository.delete(addressToDelete);
+        addressToDelete.setActive(false);
+        shippingDetailsRepository.save(addressToDelete);
 
         // Si eliminamos la dirección predeterminada, establecer otra como predeterminada
         if (addressToDelete.isDefault()) {
-            shippingDetailsRepository.findByUserId(userId).stream()
+            shippingDetailsRepository.findByUserIdAndActiveTrue(userId).stream()
                     .findFirst()
                     .ifPresent(newDefault -> {
                         newDefault.setDefault(true);
@@ -138,12 +140,12 @@ public class ShippingService implements IShippingService {
     @Override
     public ShippingDetails getShippingAddressById(Long userId, Long addressId) {
         return shippingDetailsRepository.findById(addressId)
-                .filter(address -> address.getUser().getId().equals(userId))
+                .filter(address -> address.getUser().getId().equals(userId) && address.isActive())
                 .orElseThrow(() -> new ResourceNotFoundException("Shipping address not found or not owned by this user"));
     }
 
     private void setAllShippingDetailsNonDefault(Long userId) {
-        List<ShippingDetails> allAddresses = shippingDetailsRepository.findByUserId(userId);
+        List<ShippingDetails> allAddresses = shippingDetailsRepository.findByUserIdAndActiveTrue(userId);
         allAddresses.forEach(address -> address.setDefault(false));
         shippingDetailsRepository.saveAll(allAddresses);
     }

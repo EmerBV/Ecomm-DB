@@ -106,9 +106,13 @@ public class User extends Auditable {
      */
     public ShippingDetails getDefaultShippingDetails() {
         return shippingDetails.stream()
+                .filter(ShippingDetails::isActive)
                 .filter(ShippingDetails::isDefault)
                 .findFirst()
-                .orElse(shippingDetails.isEmpty() ? null : shippingDetails.get(0));
+                .orElse(shippingDetails.stream()
+                        .filter(ShippingDetails::isActive)
+                        .findFirst()
+                        .orElse(null));
     }
 
     /**
