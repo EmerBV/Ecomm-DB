@@ -13,6 +13,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -96,6 +97,36 @@ public class GlobalExceptionHandler {
         logger.error("Custom Stripe error: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ApiResponse("Error en el procesamiento del pago: " + ex.getMessage(), null));
+    }
+
+    @ExceptionHandler(PaymentException.class)
+    public ResponseEntity<ApiResponse> handlePaymentException(PaymentException e) {
+        logger.error("Error en procesamiento de pago: {}", e.getMessage());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiResponse("Error de pago: " + e.getMessage(), null));
+    }
+
+    // Si usas la API de Java SDK de PayPal, podrías tener que manejar estas excepciones
+    @ExceptionHandler(com.paypal.http.exceptions.HttpException.class)
+    public ResponseEntity<ApiResponse> handlePayPalHttpException(com.paypal.http.exceptions.HttpException e) {
+        logger.error("Error en API de PayPal: {} - Status code: {}",
+                e.getMessage(), e.statusCode());
+
+        Map<String, Object> errorDetails = new HashMap<>();
+        errorDetails.put("statusCode", e.statusCode());
+        errorDetails.put("message", e.getMessage());
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ApiResponse("Error en API de PayPal", errorDetails));
+    }
+
+    @ExceptionHandler(IOException.class)
+    public ResponseEntity<ApiResponse> handleIOException(IOException e) {
+        logger.error("Error de conectividad: {}", e.getMessage());
+
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(new ApiResponse("Error de conectividad con el servicio de pago", e.getMessage()));
     }
 
 }

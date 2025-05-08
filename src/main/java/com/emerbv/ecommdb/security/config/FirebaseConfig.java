@@ -1,4 +1,4 @@
-package com.emerbv.ecommdb.config;
+package com.emerbv.ecommdb.security.config;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
