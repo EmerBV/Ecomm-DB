@@ -2,6 +2,7 @@ package com.emerbv.ecommdb.service.product;
 
 import com.emerbv.ecommdb.dto.ImageDto;
 import com.emerbv.ecommdb.dto.ProductDto;
+import com.emerbv.ecommdb.dto.ProductFilterDto;
 import com.emerbv.ecommdb.enums.ProductStatus;
 import com.emerbv.ecommdb.exceptions.AlreadyExistsException;
 import com.emerbv.ecommdb.exceptions.ProductNotFoundException;
@@ -15,6 +16,11 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -351,6 +357,56 @@ public class ProductService implements IProductService  {
     }
      */
 
+    @Override
+    public Page<Product> getFilteredProducts(ProductFilterDto filterDto) {
+        Pageable pageable = createPageable(filterDto);
+        return productRepository.findProductsWithFilters(
+                filterDto.getAvailability(),
+                filterDto.getCategory(),
+                filterDto.getBrand(),
+                filterDto.getMinPrice(),
+                filterDto.getMaxPrice(),
+                pageable
+        );
+    }
 
+    private Pageable createPageable(ProductFilterDto filterDto) {
+        String sortField = getSortField(filterDto.getSortBy());
+        Sort.Direction direction = getSortDirection(filterDto.getSortBy());
+        
+        return PageRequest.of(
+                filterDto.getPage(),
+                filterDto.getSize(),
+                Sort.by(direction, sortField)
+        );
+    }
+
+    private String getSortField(String sortBy) {
+        if (sortBy == null) {
+            return "createdAt";
+        }
+        
+        return switch (sortBy.toLowerCase()) {
+            case "price_asc", "price_desc" -> "price";
+            case "name_asc", "name_desc" -> "name";
+            case "bestselling" -> "salesCount";
+            case "mostwished" -> "wishCount";
+            case "newest" -> "createdAt";
+            case "discount" -> "discountPercentage";
+            default -> "createdAt";
+        };
+    }
+
+    private Sort.Direction getSortDirection(String sortBy) {
+        if (sortBy == null) {
+            return Sort.Direction.DESC;
+        }
+        
+        return switch (sortBy.toLowerCase()) {
+            case "price_asc", "name_asc" -> Sort.Direction.ASC;
+            case "price_desc", "name_desc", "bestselling", "mostwished", "newest", "discount" -> Sort.Direction.DESC;
+            default -> Sort.Direction.DESC;
+        };
+    }
 
 }

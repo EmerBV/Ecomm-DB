@@ -1,6 +1,7 @@
 package com.emerbv.ecommdb.controller;
 
 import com.emerbv.ecommdb.dto.ProductDto;
+import com.emerbv.ecommdb.dto.ProductFilterDto;
 import com.emerbv.ecommdb.enums.ProductStatus;
 import com.emerbv.ecommdb.exceptions.AlreadyExistsException;
 import com.emerbv.ecommdb.exceptions.ResourceNotFoundException;
@@ -10,12 +11,17 @@ import com.emerbv.ecommdb.response.ApiResponse;
 import com.emerbv.ecommdb.service.product.IProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
@@ -301,5 +307,41 @@ public class ProductController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiResponse("Error retrieving most wished products", e.getMessage()));
         }
+    }
+
+    @GetMapping("/filter")
+    public ResponseEntity<ApiResponse> getFilteredProducts(
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) ProductStatus availability,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) String brand,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        
+        ProductFilterDto filterDto = new ProductFilterDto();
+        filterDto.setSortBy(sortBy);
+        filterDto.setAvailability(availability);
+        filterDto.setCategory(category);
+        filterDto.setMinPrice(minPrice);
+        filterDto.setMaxPrice(maxPrice);
+        filterDto.setBrand(brand);
+        filterDto.setPage(page);
+        filterDto.setSize(size);
+
+        Page<Product> products = productService.getFilteredProducts(filterDto);
+        List<ProductDto> productDtos = products.getContent().stream()
+                .map(productService::convertToDto)
+                .collect(Collectors.toList());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("products", productDtos);
+        response.put("totalElements", products.getTotalElements());
+        response.put("totalPages", products.getTotalPages());
+        response.put("currentPage", products.getNumber());
+        response.put("size", products.getSize());
+
+        return ResponseEntity.ok(new ApiResponse("Productos filtrados exitosamente", response));
     }
 }

@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +23,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class WishListService implements IWishListService {
 
     private static final Logger logger = LoggerFactory.getLogger(WishListService.class);
@@ -32,6 +32,20 @@ public class WishListService implements IWishListService {
     private final IProductService productService;
     private final ProductRepository productRepository;
     private final ModelMapper modelMapper;
+
+    @Autowired
+    public WishListService(
+            WishListRepository wishListRepository,
+            IUserService userService,
+            IProductService productService,
+            ProductRepository productRepository,
+            ModelMapper modelMapper) {
+        this.wishListRepository = wishListRepository;
+        this.userService = userService;
+        this.productService = productService;
+        this.productRepository = productRepository;
+        this.modelMapper = modelMapper;
+    }
 
     @Override
     @Transactional

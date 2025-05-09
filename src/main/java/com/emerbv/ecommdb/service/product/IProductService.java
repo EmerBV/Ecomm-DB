@@ -4,6 +4,8 @@ import com.emerbv.ecommdb.dto.ProductDto;
 import com.emerbv.ecommdb.enums.ProductStatus;
 import com.emerbv.ecommdb.model.Product;
 import com.emerbv.ecommdb.request.ProductRequest;
+import com.emerbv.ecommdb.dto.ProductFilterDto;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
@@ -39,5 +41,12 @@ public interface IProductService {
     List<Product> getPreOrderProductsByStatus(ProductStatus status);
 
     List<Product> getMostWishedProducts(int limit);
+
+    /**
+     * Obtiene productos filtrados y ordenados según los criterios especificados
+     * @param filterDto DTO con los criterios de filtrado y ordenamiento
+     * @return Página de productos filtrados
+     */
+    Page<Product> getFilteredProducts(ProductFilterDto filterDto);
 
 }

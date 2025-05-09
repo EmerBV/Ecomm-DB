@@ -11,9 +11,9 @@ import com.emerbv.ecommdb.repository.ProductRepository;
 import com.emerbv.ecommdb.repository.UserRepository;
 import com.emerbv.ecommdb.service.cart.ICartService;
 import com.emerbv.ecommdb.service.product.IProductService;
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
  * Servicio para manejar campañas automatizadas de notificaciones
  */
 @Service
-@RequiredArgsConstructor
 public class NotificationCampaignService {
     private static final Logger logger = LoggerFactory.getLogger(NotificationCampaignService.class);
 
@@ -38,6 +37,24 @@ public class NotificationCampaignService {
     private final ICartService cartService;
     private final IProductService productService;
     private final NotificationPreferenceService preferenceService;
+
+    @Autowired
+    public NotificationCampaignService(
+            INotificationService notificationService,
+            CartRepository cartRepository,
+            UserRepository userRepository,
+            ProductRepository productRepository,
+            ICartService cartService,
+            IProductService productService,
+            NotificationPreferenceService preferenceService) {
+        this.notificationService = notificationService;
+        this.cartRepository = cartRepository;
+        this.userRepository = userRepository;
+        this.productRepository = productRepository;
+        this.cartService = cartService;
+        this.productService = productService;
+        this.preferenceService = preferenceService;
+    }
 
     /**
      * Tarea programada para enviar notificaciones de carritos abandonados

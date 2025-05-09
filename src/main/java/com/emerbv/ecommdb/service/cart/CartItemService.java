@@ -23,45 +23,6 @@ public class CartItemService implements ICartItemService {
     private final ProductRepository productRepository;
     private final IProductService productService;
     private final IVariantService variantService;
-    private final ICartService cartService;
-
-    /*
-    @Override
-    public void addItemToCart(Long cartId, Long productId, int quantity) {
-        // 1. Get the cart
-        Cart cart = cartService.getCart(cartId);
-
-        // 2. Get the product
-        Product product = productService.getProductById(productId);
-        System.out.println("\n\n=====================================================================================");
-        System.out.println("The product Id:" + productId);
-        System.out.println("The product:" + product);
-        System.out.println("\n\n=====================================================================================");
-
-        // 3. Check if the product already in the cart
-        CartItem cartItem = cart.getItems()
-                .stream()
-                //.filter(item -> item.getProduct().getId().equals(productId))
-                .filter(item -> item.getProduct() != null && item.getProduct().getId().equals(productId))
-                .findFirst().orElse(new CartItem());
-
-        // 4. If No, then initiate a new CartItem entry
-        if (cartItem.getId() == null) {
-            cartItem.setCart(cart);
-            cartItem.setProduct(product);
-            cartItem.setQuantity(quantity);
-            cartItem.setUnitPrice(product.getPrice());
-        } else {
-            // 5. If Yes, then increase the quantity with the requested quantity
-            cartItem.setQuantity(cartItem.getQuantity() + quantity);
-        }
-
-        cartItem.setTotalPrice();
-        cart.addItem(cartItem);
-        cartItemRepository.save(cartItem);
-        cartRepository.save(cart);
-    }
-     */
 
     @Override
     public void addItemToCart(Long cartId, Long productId, int quantity) {
@@ -71,7 +32,8 @@ public class CartItemService implements ICartItemService {
     @Override
     public void addItemToCartWithVariant(Long cartId, Long productId, Long variantId, int quantity) {
         // 1. Get the cart
-        Cart cart = cartService.getCart(cartId);
+        Cart cart = cartRepository.findById(cartId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
 
         // 2. Get the product
         Product product = productService.getProductById(productId);
@@ -118,7 +80,8 @@ public class CartItemService implements ICartItemService {
     @Override
     public void addItemToCartWithoutVariant(Long cartId, Long productId, int quantity) {
         // 1. Get the cart
-        Cart cart = cartService.getCart(cartId);
+        Cart cart = cartRepository.findById(cartId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
 
         // 2. Get the product
         Product product = productService.getProductById(productId);
@@ -153,7 +116,8 @@ public class CartItemService implements ICartItemService {
 
     @Override
     public void removeItemFromCart(Long cartId, Long productId) {
-        Cart cart = cartService.getCart(cartId);
+        Cart cart = cartRepository.findById(cartId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
         CartItem itemToRemove = getCartItem(cartId, productId);
         cart.removeItem(itemToRemove);
         cartRepository.save(cart);
@@ -161,7 +125,8 @@ public class CartItemService implements ICartItemService {
 
     @Override
     public void updateItemQuantity(Long cartId, Long productId, int quantity) {
-        Cart cart = cartService.getCart(cartId);
+        Cart cart = cartRepository.findById(cartId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
 
         CartItem itemToUpdate = cart.getItems()
                 .stream()
@@ -186,8 +151,9 @@ public class CartItemService implements ICartItemService {
 
     @Override
     public CartItem getCartItem(Long cartId, Long productId) {
-        Cart cart = cartService.getCart(cartId);
-        return  cart.getItems()
+        Cart cart = cartRepository.findById(cartId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
+        return cart.getItems()
                 .stream()
                 .filter(item -> item.getProduct() != null && item.getProduct().getId().equals(productId))
                 .findFirst().orElseThrow(() -> new ResourceNotFoundException("Item not found"));
