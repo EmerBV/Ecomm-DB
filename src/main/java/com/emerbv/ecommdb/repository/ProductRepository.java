@@ -57,13 +57,13 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @EntityGraph(attributePaths = {"category", "images"})
     List<Product> findByPreOrderTrueAndStatus(ProductStatus status);
 
-    @EntityGraph(attributePaths = {"images", "category", "brand"})
+    @EntityGraph(attributePaths = {"images", "category"})
     @Query("SELECT p FROM Product p WHERE " +
-           "(:availability IS NULL OR p.status = :availability) AND " +
-           "(:category IS NULL OR p.category.name = :category) AND " +
-           "(:brand IS NULL OR p.brand = :brand) AND " +
-           "(:minPrice IS NULL OR p.price >= :minPrice) AND " +
-           "(:maxPrice IS NULL OR p.price <= :maxPrice)")
+            "(:availability IS NULL OR p.status = :availability) AND " +
+            "(:category IS NULL OR p.category.name = :category) AND " +
+            "(:brand IS NULL OR p.brand = :brand) AND " +
+            "(:minPrice IS NULL OR p.price >= :minPrice) AND " +
+            "(:maxPrice IS NULL OR p.price <= :maxPrice)")
     Page<Product> findProductsWithFilters(
             @Param("availability") ProductStatus availability,
             @Param("category") String category,

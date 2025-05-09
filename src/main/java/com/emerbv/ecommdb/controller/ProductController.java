@@ -319,7 +319,7 @@ public class ProductController {
             @RequestParam(required = false) String brand,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        
+
         ProductFilterDto filterDto = new ProductFilterDto();
         filterDto.setSortBy(sortBy);
         filterDto.setAvailability(availability);
@@ -330,18 +330,29 @@ public class ProductController {
         filterDto.setPage(page);
         filterDto.setSize(size);
 
-        Page<Product> products = productService.getFilteredProducts(filterDto);
-        List<ProductDto> productDtos = products.getContent().stream()
-                .map(productService::convertToDto)
-                .collect(Collectors.toList());
+        try {
+            Page<Product> products = productService.getFilteredProducts(filterDto);
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("products", productDtos);
-        response.put("totalElements", products.getTotalElements());
-        response.put("totalPages", products.getTotalPages());
-        response.put("currentPage", products.getNumber());
-        response.put("size", products.getSize());
+            if (products.isEmpty()) {
+                return ResponseEntity.status(NOT_FOUND)
+                        .body(new ApiResponse("No products found matching your criteria", null));
+            }
 
-        return ResponseEntity.ok(new ApiResponse("Productos filtrados exitosamente", response));
+            List<ProductDto> productDtos = products.getContent().stream()
+                    .map(productService::convertToDto)
+                    .collect(Collectors.toList());
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("products", productDtos);
+            response.put("totalElements", products.getTotalElements());
+            response.put("totalPages", products.getTotalPages());
+            response.put("currentPage", products.getNumber());
+            response.put("size", products.getSize());
+
+            return ResponseEntity.ok(new ApiResponse("Products filtered successfully", response));
+        } catch (Exception e) {
+            return ResponseEntity.status(INTERNAL_SERVER_ERROR)
+                    .body(new ApiResponse("Error filtering products", e.getMessage()));
+        }
     }
 }

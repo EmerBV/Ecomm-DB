@@ -359,7 +359,10 @@ public class ProductService implements IProductService  {
 
     @Override
     public Page<Product> getFilteredProducts(ProductFilterDto filterDto) {
+        // Create pageable with proper sort direction
         Pageable pageable = createPageable(filterDto);
+
+        // Use the repository method
         return productRepository.findProductsWithFilters(
                 filterDto.getAvailability(),
                 filterDto.getCategory(),
@@ -373,7 +376,7 @@ public class ProductService implements IProductService  {
     private Pageable createPageable(ProductFilterDto filterDto) {
         String sortField = getSortField(filterDto.getSortBy());
         Sort.Direction direction = getSortDirection(filterDto.getSortBy());
-        
+
         return PageRequest.of(
                 filterDto.getPage(),
                 filterDto.getSize(),
@@ -383,9 +386,9 @@ public class ProductService implements IProductService  {
 
     private String getSortField(String sortBy) {
         if (sortBy == null) {
-            return "createdAt";
+            return "createdAt"; // Default sort
         }
-        
+
         return switch (sortBy.toLowerCase()) {
             case "price_asc", "price_desc" -> "price";
             case "name_asc", "name_desc" -> "name";
@@ -399,9 +402,9 @@ public class ProductService implements IProductService  {
 
     private Sort.Direction getSortDirection(String sortBy) {
         if (sortBy == null) {
-            return Sort.Direction.DESC;
+            return Sort.Direction.DESC; // Default direction
         }
-        
+
         return switch (sortBy.toLowerCase()) {
             case "price_asc", "name_asc" -> Sort.Direction.ASC;
             case "price_desc", "name_desc", "bestselling", "mostwished", "newest", "discount" -> Sort.Direction.DESC;
