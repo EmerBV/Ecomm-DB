@@ -70,7 +70,8 @@ public class Product {
                     .mapToInt(Variant::getInventory)
                     .sum();
         }
-        return  inventory;
+
+        return  0;
     }
 
     public void updateProductDetails() {
